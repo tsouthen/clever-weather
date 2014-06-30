@@ -7,4 +7,40 @@
     <string name="title_location">Location</string>
     <string name="action_settings">Settings</string>
     <string name="action_search">Search</string>
+
+    <string-array name="provinces">
+        <item>Alberta</item>
+        <item>British Columbia</item>
+        <item>Manitoba</item>
+        <item>New Brunswick</item>
+        <item>Newfoundland and Labrador</item>
+        <item>Northwest Territories</item>
+        <item>Nova Scotia</item>
+        <item>Nunavut</item>
+        <item>Ontario</item>
+        <item>Prince Edward Island</item>
+        <item>Quebec</item>
+        <item>Saskatchewan</item>
+        <item>Yukon</item>
+    </string-array>
+    <!-- Do not translate these abbreviations -->
+    <string-array name="province_abbr">
+        <item>AB</item>
+        <item>BC</item>
+        <item>MB</item>
+        <item>NB</item>
+        <item>NL</item>
+        <item>NT</item>
+        <item>NS</item>
+        <item>NU</item>
+        <item>ON</item>
+        <item>PE</item>
+        <item>QC</item>
+        <item>SK</item>
+        <item>YT</item>
+    </string-array>
+
+    <string name="title_activity_province">ProvinceActivity</string>
+    <string name="hello_world">Hello world!</string>
+
 </resources>

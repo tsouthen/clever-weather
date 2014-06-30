@@ -1,36 +1,19 @@
 package com.listotechnologies.cleverweather;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Locale;
 
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
-import android.app.ListFragment;
-import android.app.LoaderManager;
-import android.content.Context;
-import android.content.CursorLoader;
-import android.content.Loader;
-import android.database.Cursor;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.os.Bundle;
 import android.support.v4.view.PagerTabStrip;
 import android.support.v4.view.ViewPager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.CursorAdapter;
-import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
 public class TabbedActivity extends Activity {
@@ -52,13 +35,6 @@ public class TabbedActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        /*
-        try {
-            copyDataBaseFromAssets();
-        } catch (IOException ioe) {
-            Log.e("TabbedActivity", "IOException", ioe);
-        }
-        */
         setContentView(R.layout.activity_tabbed);
 
         // Create the adapter that will return a fragment for each of the three
@@ -107,7 +83,7 @@ public class TabbedActivity extends Activity {
         @Override
         public Fragment getItem(int position) {
             if (position == 0)
-                return FavoritesFragment.newInstance();
+                return CitiesFragment.newFavoritesInstance();
 
             if (position == 1)
                 return ProvincesFragment.newInstance();
@@ -138,96 +114,6 @@ public class TabbedActivity extends Activity {
         }
     }
 
-    public static class Province {
-        public final String Name;
-        public final String Abbreviation;
-        private static ArrayList<Province> s_list;
-
-        public Province (String name, String abbreviation) {
-            Name = name;
-            Abbreviation = abbreviation;
-        }
-
-        public static ArrayList<Province> GetProvinces() {
-            if (s_list == null) {
-                s_list = new ArrayList<Province>();
-                s_list.add(new Province("Alberta", "AB"));
-                s_list.add(new Province("British Columbia", "BC"));
-                s_list.add(new Province("Manitoba", "MB"));
-                s_list.add(new Province("New Brunswick", "NB"));
-                s_list.add(new Province("Newfoundland & Labrador", "NL"));
-                s_list.add(new Province("Northwest Territories", "NT"));
-                s_list.add(new Province("Nova Scotia", "NS"));
-                s_list.add(new Province("Nunavut", "NU"));
-                s_list.add(new Province("Ontario", "ON"));
-                s_list.add(new Province("Prince Edward Island", "PE"));
-                s_list.add(new Province("Quebec", "QC"));
-                s_list.add(new Province("Saskatchewan", "SK"));
-                s_list.add(new Province("Yukon", "YT"));
-            }
-            return s_list;
-        }
-
-        @Override
-        public String toString() {
-            return Name;
-        }
-    }
-
-    public static class ProvincesFragment extends ListFragment {
-        @Override
-        public void onActivityCreated(Bundle savedInstanceState) {
-            super.onActivityCreated(savedInstanceState);
-            ArrayAdapter<Province> adapter = new ArrayAdapter<Province>(getActivity(), android.R.layout.simple_list_item_1, Province.GetProvinces());
-            setListAdapter(adapter);
-        }
-
-        public static ProvincesFragment newInstance() {
-            return new ProvincesFragment();
-        }
-    }
-
-    public static class FavoritesFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
-        private SimpleCursorAdapter m_adapter;
-
-        @Override
-        public void onActivityCreated(Bundle savedInstanceState) {
-            super.onActivityCreated(savedInstanceState);
-
-            int resId = 0;
-            String[] dataColumns = { CleverWeatherProvider.CITY_NAMEEN_COLUMN };
-            int[] viewIds = { android.R.id.text1 };
-
-            m_adapter = new SimpleCursorAdapter(getActivity(), android.R.layout.simple_list_item_1, null, dataColumns, viewIds, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
-            setListAdapter(m_adapter);
-            getLoaderManager().initLoader(0, null, this);
-        }
-
-        public static FavoritesFragment newInstance() {
-            return new FavoritesFragment();
-        }
-
-        @Override
-        public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-            String selection = CleverWeatherProvider.CITY_ISFAVORITE_COLUMN + "=1";
-            String[] projection = { CleverWeatherProvider.ROW_ID, CleverWeatherProvider.CITY_NAMEEN_COLUMN };
-            return new CursorLoader(getActivity(), CleverWeatherProvider.CITY_URI, projection, selection, null, CleverWeatherProvider.CITY_NAMEEN_COLUMN);
-        }
-
-        @Override
-        public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
-            m_adapter.swapCursor(cursor);
-        }
-
-        @Override
-        public void onLoaderReset(Loader<Cursor> cursorLoader) {
-            m_adapter.swapCursor(null);
-        }
-    }
-
-    /**
-     * A placeholder fragment containing a simple view.
-     */
     public static class PlaceholderFragment extends Fragment {
         /**
          * The fragment argument representing the section number for this
@@ -256,38 +142,6 @@ public class TabbedActivity extends Activity {
             TextView tv = (TextView) rootView.findViewById(R.id.section_label);
             tv.setText("Not yet implemented");
             return rootView;
-        }
-    }
-
-    private void copyDataBaseFromAssets() throws IOException {
-        // Path to the db
-        String dbName = "CleverWeather.db";
-        File dbPath = this.getDatabasePath(dbName);
-        if (dbPath.exists())
-            return;
-
-        //Open your local db as the input stream
-        InputStream myInput = this.getAssets().open(dbName);
-        OutputStream myOutput = null;
-
-        //create directory path if necessary
-        File parentFile = dbPath.getParentFile();
-        if (!parentFile.exists())
-            parentFile.mkdirs();
-
-        //Open the empty db as the output stream
-        try {
-            myOutput = new BufferedOutputStream(new FileOutputStream(dbPath));
-
-            //transfer bytes from the input file to the output file
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = myInput.read(buffer)) > 0) {
-                myOutput.write(buffer, 0, length);
-            }
-        } finally {
-            myOutput.close();
-            myInput.close();
         }
     }
 }

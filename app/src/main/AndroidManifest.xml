@@ -4,8 +4,8 @@
 
     <application
         android:allowBackup="true"
-        android:label="@string/app_name"
         android:icon="@drawable/clever_weather"
+        android:label="@string/app_name"
         android:theme="@style/Theme.Cleverweather" >
         <activity
             android:name=".TabbedActivity"
@@ -16,8 +16,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <provider android:name=".CleverWeatherProviderExtended"
+
+        <provider
+            android:name=".CleverWeatherProviderExtended"
             android:authorities="com.listotechnologies.cleverweather.provider" />
+
+        <activity
+            android:name=".ProvinceActivity"
+            android:label="@string/title_activity_province"
+            android:parentActivityName=".TabbedActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.listotechnologies.cleverweather.TabbedActivity" />
+        </activity>
     </application>
 
 </manifest>
