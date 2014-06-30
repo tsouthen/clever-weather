@@ -18,7 +18,6 @@ public class ProvinceActivity extends Activity {
                 setTitle(provName);
 
             String provAbbr = getIntent().getStringExtra(EXTRA_PROVINCE_ABBR);
-            //R.id.container
             getFragmentManager().beginTransaction().add(android.R.id.content, CitiesFragment.newProvinceInstance(provAbbr)).commit();
         }
     }
