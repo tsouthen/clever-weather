@@ -28,6 +28,8 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
         @Override
         public void onCreate(SQLiteDatabase db) {
             super.onCreate(db);
+
+            //populate the City table
             BufferedReader in = null;
             try {
                 in = new BufferedReader(new InputStreamReader(mContext.getAssets().open("cities.sql")));

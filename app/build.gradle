@@ -6,7 +6,7 @@ android {
     buildToolsVersion "20.0.0"
 
     defaultConfig {
-        applicationId "listotechnologies.com.cleverweather"
+        applicationId "com.listotechnologies.cleverweather"
         minSdkVersion 15
         //targetSdkVersion 'L'
         targetSdkVersion 19
