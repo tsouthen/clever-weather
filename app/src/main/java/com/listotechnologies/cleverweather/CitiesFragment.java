@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,10 +22,29 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     private boolean m_byLocation;
     private SwipeRefreshLayout mSwipeRefresh;
 
+    public static final String ARG_PROVINCE = "ARG_PROVINCE";
+    public static final String ARG_FAVORITES = "ARG_FAVORITES";
+    public static final String ARG_LOCATION = "ARG_LOCATION";
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        Bundle bundle = getArguments();
+        if (bundle != null) {
+            if (bundle.containsKey(ARG_PROVINCE)) {
+                m_province = bundle.getString(ARG_PROVINCE);
+            } else if (bundle.containsKey(ARG_FAVORITES)) {
+                m_onlyFavorites = bundle.getBoolean(ARG_FAVORITES);
+            } else if (bundle.containsKey(ARG_LOCATION)) {
+                m_byLocation = bundle.getBoolean(ARG_LOCATION);
+            }
+        }
+        if (!m_onlyFavorites && !m_byLocation && m_province == null) {
+            Log.d("CitiesFragment", "CitiesFragment created without any constraints!");
+        }
+
         View view = inflater.inflate(R.layout.swipe_refresh, container, false);
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
+        mSwipeRefresh.setColorScheme(R.color.swipe_color_1, R.color.swipe_color_2, R.color.swipe_color_3, R.color.swipe_color_4);
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -49,19 +69,25 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
     public static CitiesFragment newFavoritesInstance() {
         CitiesFragment frag = new CitiesFragment();
-        frag.m_onlyFavorites = true;
+        Bundle bundle = new Bundle();
+        bundle.putBoolean(ARG_FAVORITES, true);
+        frag.setArguments(bundle);
         return frag;
     }
 
     public static CitiesFragment newProvinceInstance(String province) {
         CitiesFragment frag = new CitiesFragment();
-        frag.m_province = province;
+        Bundle bundle = new Bundle();
+        bundle.putString(ARG_PROVINCE, province);
+        frag.setArguments(bundle);
         return frag;
     }
 
     public static CitiesFragment newLocationInstance() {
         CitiesFragment frag = new CitiesFragment();
-        frag.m_byLocation = true;
+        Bundle bundle = new Bundle();
+        bundle.putBoolean(ARG_LOCATION, true);
+        frag.setArguments(bundle);
         return frag;
     }
 
