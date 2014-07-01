@@ -5,14 +5,18 @@ import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
+import android.location.Location;
 import android.os.Bundle;
 import android.widget.CursorAdapter;
 import android.widget.SimpleCursorAdapter;
+
+import com.google.android.gms.location.LocationClient;
 
 public class CitiesFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
     private SimpleCursorAdapter m_adapter;
     private boolean m_onlyFavorites;
     private String m_province;
+    private boolean m_byLocation;
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
@@ -39,16 +43,29 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         return frag;
     }
 
+    public static CitiesFragment newLocationInstance() {
+        CitiesFragment frag = new CitiesFragment();
+        frag.m_byLocation = true;
+        return frag;
+    }
+
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        String selection = null;
-        if (m_onlyFavorites)
-            selection = CleverWeatherProvider.CITY_ISFAVORITE_COLUMN + "=1";
-        else if (m_province != null)
-            selection = CleverWeatherProvider.CITY_PROVINCE_COLUMN + "='" + m_province + "'";
-
+        String where = null;
+        String orderBy = CleverWeatherProvider.CITY_NAMEEN_COLUMN + " COLLATE UNICODE";
         String[] projection = { CleverWeatherProvider.ROW_ID, CleverWeatherProvider.CITY_NAMEEN_COLUMN };
-        return new CursorLoader(getActivity(), CleverWeatherProvider.CITY_URI, projection, selection, null, CleverWeatherProvider.CITY_NAMEEN_COLUMN);
+
+        if (m_onlyFavorites) {
+            where = CleverWeatherProvider.CITY_ISFAVORITE_COLUMN + "=1";
+        } else if (m_province != null) {
+            where = CleverWeatherProvider.CITY_PROVINCE_COLUMN + "='" + m_province + "'";
+        } else if (m_byLocation) {
+            String colName = "dist";
+            projection = new String[] { CleverWeatherProvider.ROW_ID, CleverWeatherProvider.CITY_NAMEEN_COLUMN, getDistanceSelection(colName) };
+            orderBy = colName + " limit 10";
+        }
+
+        return new CursorLoader(getActivity(), CleverWeatherProvider.CITY_URI, projection, where, null, orderBy);
     }
 
     @Override
@@ -59,5 +76,22 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     @Override
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
         m_adapter.swapCursor(null);
+    }
+
+    String getDistanceSelection(String colName) {
+        String selection = null;
+        double lat = 49.68;
+        double lon = -124.93;
+        Location location = getCurrentLocation();
+        if (location != null) {
+            lat = location.getLatitude();
+            lon = location.getLongitude();
+        }
+        return String.format("(((%.3f-longitude)*(%.3f-longitude))+((%.3f-latitude)*(%.3f-latitude))) as %s", lon, lon, lat, lat, colName);
+    }
+
+    Location getCurrentLocation() {
+        TabbedActivity activity = (TabbedActivity) getActivity();
+        return activity.getCurrentLocation();
     }
 }

@@ -850,4 +850,5 @@ insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorit
 insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorite) values ('s0000854', 'Sea to Sky - Squamish To Whistler', 'Sea to Sky - de Squamish à Whistler', 'HEF', '49.982', '123.141', '0');
 insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorite) values ('s0000855', 'Sea to Sky - West Vancouver Upper Levels to Squamish', 'Sea to Sky - West Vancouver de la route Upper Levels à Squamish', 'HEF', '49.544', '123.241', '0');
 insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorite) values ('s0000856', 'Trans Canada Highway - Eagle Pass to Rogers Pass', 'Route Transcanadienne - du col Eagle au col Rogers', 'HEF', '51.25195', '117.59584', '0');
+update city set Longitude = -Longitude;
 commit;

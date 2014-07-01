@@ -5,6 +5,7 @@ import java.util.Locale;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.location.Location;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.os.Bundle;
 import android.support.v4.view.PagerTabStrip;
@@ -16,21 +17,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-public class TabbedActivity extends Activity {
-    /**
-     * The {@link android.support.v4.view.PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link android.support.v13.app.FragmentStatePagerAdapter}.
-     */
-    SectionsPagerAdapter mSectionsPagerAdapter;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesClient;
+import com.google.android.gms.common.GooglePlayServicesUtil;
+import com.google.android.gms.location.LocationClient;
 
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
+public class TabbedActivity extends Activity
+        implements GooglePlayServicesClient.ConnectionCallbacks,
+        GooglePlayServicesClient.OnConnectionFailedListener{
+    SectionsPagerAdapter mSectionsPagerAdapter;
     ViewPager mViewPager;
+    LocationClient mLocationClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,8 +43,11 @@ public class TabbedActivity extends Activity {
         PagerTabStrip pts = (PagerTabStrip) mViewPager.findViewById(R.id.pager_tab_strip);
         pts.setTabIndicatorColor(0xff8800);
         mViewPager.setAdapter(mSectionsPagerAdapter);
-    }
 
+        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS) {
+            mLocationClient = new LocationClient(this, this, this);
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -70,10 +70,46 @@ public class TabbedActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (mLocationClient != null)
+            mLocationClient.connect();
+    }
+
+    @Override
+    protected void onStop() {
+        if (mLocationClient != null)
+            mLocationClient.disconnect();
+        super.onStop();
+    }
+
+    Location getCurrentLocation() {
+        if (mLocationClient == null)
+            return null;
+
+        try {
+            return mLocationClient.getLastLocation();
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+
+    }
+
+    @Override
+    public void onDisconnected() {
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+
+    }
+
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
         public SectionsPagerAdapter(FragmentManager fm) {
@@ -88,9 +124,10 @@ public class TabbedActivity extends Activity {
             if (position == 1)
                 return ProvincesFragment.newInstance();
 
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1);
+            if (position == 2)
+                return CitiesFragment.newLocationInstance();
+
+            return PlaceholderFragment.newInstance(position);
         }
 
         @Override
