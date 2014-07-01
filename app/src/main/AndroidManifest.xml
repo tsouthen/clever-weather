@@ -28,7 +28,9 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.listotechnologies.cleverweather.TabbedActivity" />
         </activity>
-        <activity android:name=".SearchCitiesActivity" >
+        <activity
+            android:name=".SearchCitiesActivity"
+            android:label="@string/title_search_cities">
             <intent-filter>
                 <action android:name="android.intent.action.SEARCH" />
             </intent-filter>
