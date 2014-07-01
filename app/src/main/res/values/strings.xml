@@ -40,7 +40,6 @@
         <item>YT</item>
     </string-array>
 
-    <string name="title_activity_province">ProvinceActivity</string>
-    <string name="hello_world">Hello world!</string>
+    <string name="search_hint">Search Cities</string>
 
 </resources>

@@ -17,31 +17,15 @@ import android.widget.SimpleCursorAdapter;
 
 public class CitiesFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
     private SimpleCursorAdapter m_adapter;
-    private boolean m_onlyFavorites;
-    private String m_province;
-    private boolean m_byLocation;
     private SwipeRefreshLayout mSwipeRefresh;
 
     public static final String ARG_PROVINCE = "ARG_PROVINCE";
     public static final String ARG_FAVORITES = "ARG_FAVORITES";
     public static final String ARG_LOCATION = "ARG_LOCATION";
+    public static final String ARG_SEARCH = "ARG_SEARCH";
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        Bundle bundle = getArguments();
-        if (bundle != null) {
-            if (bundle.containsKey(ARG_PROVINCE)) {
-                m_province = bundle.getString(ARG_PROVINCE);
-            } else if (bundle.containsKey(ARG_FAVORITES)) {
-                m_onlyFavorites = bundle.getBoolean(ARG_FAVORITES);
-            } else if (bundle.containsKey(ARG_LOCATION)) {
-                m_byLocation = bundle.getBoolean(ARG_LOCATION);
-            }
-        }
-        if (!m_onlyFavorites && !m_byLocation && m_province == null) {
-            Log.d("CitiesFragment", "CitiesFragment created without any constraints!");
-        }
-
         View view = inflater.inflate(R.layout.swipe_refresh, container, false);
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
         mSwipeRefresh.setColorScheme(R.color.swipe_color_1, R.color.swipe_color_2, R.color.swipe_color_3, R.color.swipe_color_4);
@@ -91,6 +75,44 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         return frag;
     }
 
+    public static CitiesFragment newSearchInstance(String search) {
+        CitiesFragment frag = new CitiesFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString(ARG_SEARCH, search);
+        frag.setArguments(bundle);
+        return frag;
+    }
+
+    private enum FilterMode { None, Location, Favorites, Search, Province };
+    private static class Filter {
+        public FilterMode Mode;
+        public String Arguments;
+    }
+
+    private Filter getFilterFromArguments() {
+        Filter filter = new Filter();
+        filter.Mode = FilterMode.None;
+
+        Bundle bundle = getArguments();
+        if (bundle != null) {
+            if (bundle.containsKey(ARG_PROVINCE)) {
+                filter.Arguments = bundle.getString(ARG_PROVINCE);
+                filter.Mode = FilterMode.Province;
+            } else if (bundle.containsKey(ARG_FAVORITES)) {
+                filter.Mode = FilterMode.Favorites;
+            } else if (bundle.containsKey(ARG_LOCATION)) {
+                filter.Mode = FilterMode.Location;
+            } else if (bundle.containsKey(ARG_SEARCH)) {
+                filter.Mode = FilterMode.Search;
+                filter.Arguments = bundle.getString(ARG_SEARCH);
+            }
+        }
+        if (filter.Mode == FilterMode.None) {
+            Log.d("CitiesFragment", "CitiesFragment created without any constraints!");
+        }
+        return filter;
+    }
+
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
         mSwipeRefresh.setRefreshing(true);
@@ -98,14 +120,25 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         String orderBy = CleverWeatherProvider.CITY_NAMEEN_COLUMN + " COLLATE UNICODE";
         String[] projection = { CleverWeatherProvider.ROW_ID, CleverWeatherProvider.CITY_NAMEEN_COLUMN };
 
-        if (m_onlyFavorites) {
-            where = CleverWeatherProvider.CITY_ISFAVORITE_COLUMN + "=1";
-        } else if (m_province != null) {
-            where = CleverWeatherProvider.CITY_PROVINCE_COLUMN + "='" + m_province + "'";
-        } else if (m_byLocation) {
-            String colName = "dist";
-            projection = new String[] { CleverWeatherProvider.ROW_ID, CleverWeatherProvider.CITY_NAMEEN_COLUMN, getDistanceProjection(colName) };
-            orderBy = colName + " limit 10";
+        Filter filter = getFilterFromArguments();
+        switch (filter.Mode) {
+            case Favorites:
+                where = CleverWeatherProvider.CITY_ISFAVORITE_COLUMN + "=1";
+                break;
+
+            case Province:
+                where = CleverWeatherProvider.CITY_PROVINCE_COLUMN + "='" + filter.Arguments + "'";
+                break;
+
+            case Location:
+                String colName = "dist";
+                projection = new String[] { CleverWeatherProvider.ROW_ID, CleverWeatherProvider.CITY_NAMEEN_COLUMN, getDistanceProjection(colName) };
+                orderBy = colName + " limit 10";
+                break;
+
+            case Search:
+                where = CleverWeatherProvider.CITY_NAMEEN_COLUMN + " LIKE '" + filter.Arguments + "%'";
+                break;
         }
 
         return new CursorLoader(getActivity(), CleverWeatherProvider.CITY_URI, projection, where, null, orderBy);
