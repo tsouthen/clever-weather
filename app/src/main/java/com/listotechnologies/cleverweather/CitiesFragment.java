@@ -3,6 +3,7 @@ package com.listotechnologies.cleverweather;
 import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
+import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.location.Location;
@@ -13,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CursorAdapter;
+import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 
 public class CitiesFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -23,33 +25,6 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     public static final String ARG_FAVORITES = "ARG_FAVORITES";
     public static final String ARG_LOCATION = "ARG_LOCATION";
     public static final String ARG_SEARCH = "ARG_SEARCH";
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.swipe_refresh, container, false);
-        mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
-        mSwipeRefresh.setColorScheme(R.color.swipe_color_1, R.color.swipe_color_2, R.color.swipe_color_3, R.color.swipe_color_4);
-        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                getLoaderManager().restartLoader(0, null, CitiesFragment.this);
-            }
-        });
-        return view;
-    }
-
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-
-        int resId = 0;
-        String[] dataColumns = { CleverWeatherProvider.CITY_NAMEEN_COLUMN };
-        int[] viewIds = { android.R.id.text1 };
-
-        m_adapter = new SimpleCursorAdapter(getActivity(), android.R.layout.simple_list_item_1, null, dataColumns, viewIds, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
-        setListAdapter(m_adapter);
-        getLoaderManager().initLoader(0, null, this);
-    }
 
     public static CitiesFragment newFavoritesInstance() {
         CitiesFragment frag = new CitiesFragment();
@@ -81,6 +56,33 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         bundle.putString(ARG_SEARCH, search);
         frag.setArguments(bundle);
         return frag;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.swipe_refresh, container, false);
+        mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
+        mSwipeRefresh.setColorScheme(R.color.swipe_color_1, R.color.swipe_color_2, R.color.swipe_color_3, R.color.swipe_color_4);
+        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                getLoaderManager().restartLoader(0, null, CitiesFragment.this);
+            }
+        });
+        return view;
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        int resId = 0;
+        String[] dataColumns = { CleverWeatherProvider.CITY_NAMEEN_COLUMN };
+        int[] viewIds = { android.R.id.text1 };
+
+        m_adapter = new SimpleCursorAdapter(getActivity(), android.R.layout.simple_list_item_1, null, dataColumns, viewIds, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+        setListAdapter(m_adapter);
+        getLoaderManager().initLoader(0, null, this);
     }
 
     private enum FilterMode { None, Location, Favorites, Search, Province };
@@ -118,7 +120,11 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         mSwipeRefresh.setRefreshing(true);
         String where = null;
         String orderBy = CleverWeatherProvider.CITY_NAMEEN_COLUMN + " COLLATE UNICODE";
-        String[] projection = { CleverWeatherProvider.ROW_ID, CleverWeatherProvider.CITY_NAMEEN_COLUMN };
+        String[] projection = {
+                CleverWeatherProvider.ROW_ID,
+                CleverWeatherProvider.CITY_CODE_COLUMN,
+                CleverWeatherProvider.CITY_NAMEEN_COLUMN,
+        };
 
         Filter filter = getFilterFromArguments();
         switch (filter.Mode) {
@@ -132,7 +138,12 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
             case Location:
                 String colName = "dist";
-                projection = new String[] { CleverWeatherProvider.ROW_ID, CleverWeatherProvider.CITY_NAMEEN_COLUMN, getDistanceProjection(colName) };
+                projection = new String[] {
+                        CleverWeatherProvider.ROW_ID,
+                        CleverWeatherProvider.CITY_CODE_COLUMN,
+                        CleverWeatherProvider.CITY_NAMEEN_COLUMN,
+                        getDistanceProjection(colName)
+                };
                 orderBy = colName + " limit 10";
                 break;
 
@@ -171,5 +182,14 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     Location getCurrentLocation() {
         TabbedActivity activity = (TabbedActivity) getActivity();
         return activity.getCurrentLocation();
+    }
+
+    @Override
+    public void onListItemClick(ListView l, View v, int position, long id) {
+        Cursor cursor = (Cursor) m_adapter.getItem(position);
+        Intent intent = new Intent(getActivity(), ForecastsActivity.class);
+        intent.putExtra(ForecastsActivity.EXTRA_CITY_CODE, cursor.getString(1));
+        intent.putExtra(ForecastsActivity.EXTRA_CITY_NAME, cursor.getString(2));
+        startActivity(intent);
     }
 }

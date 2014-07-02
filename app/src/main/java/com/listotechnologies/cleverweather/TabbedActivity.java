@@ -48,9 +48,10 @@ public class TabbedActivity extends Activity
         pts.setTabIndicatorColor(0xff8800);
         mViewPager.setAdapter(mSectionsPagerAdapter);
 
-        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS) {
+        if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS)
             mLocationClient = new LocationClient(this, this, this);
-        }
+
+        ForecastParser.uriTest(this);
     }
 
     @Override
@@ -71,9 +72,6 @@ public class TabbedActivity extends Activity
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_search) {
-
-        }
         return super.onOptionsItemSelected(item);
     }
 

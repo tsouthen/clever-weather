@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/list_item"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <ImageView
+        android:id="@+id/icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="3dip"
+        android:contentDescription="weather icon"
+        android:src="@drawable/cbc_white_22" />
+
+    <TextView
+        android:id="@+id/hightemp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="8dip"
+        android:layout_marginTop="4dip"
+        android:layout_alignParentRight="true"
+        android:text="22° | 14°"
+        android:textAppearance="?android:attr/textAppearanceLarge" 
+        android:singleLine="true" />
+
+    <TextView
+        android:id="@+id/lowtemp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="8dip"
+        android:layout_marginTop="4dip"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/hightemp"
+        android:text="12°"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:singleLine="true"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@android:id/text1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/icon"
+        android:layout_marginLeft="0dip"
+        android:layout_marginTop="4dip"
+        android:layout_toRightOf="@id/icon"
+        android:layout_toLeftOf="@id/hightemp"
+        android:text="Friday"
+        android:textAppearance="?android:attr/textAppearanceLarge" 
+        android:singleLine="true" 
+        android:ellipsize="end" />
+
+    <!--
+        android:layout_alignLeft="@android:id/text1"
+        android:layout_alignRight="@android:id/text1"
+    -->
+    <TextView
+        android:id="@android:id/text2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@android:id/text1"
+        android:layout_toRightOf="@id/icon"
+        android:layout_toLeftOf="@id/hightemp"
+        android:text="Mix of sun and clouds, high of 25, low of 12. Cooler in higher areas overnight."
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:layout_marginRight="4dip" 
+        android:paddingBottom="4dip" />
+
+</RelativeLayout>
