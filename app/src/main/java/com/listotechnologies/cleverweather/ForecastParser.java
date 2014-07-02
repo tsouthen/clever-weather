@@ -20,6 +20,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 public class ForecastParser {
     private static Element getFirstElementByTagName(Element element, String tagName) {
+        if (element == null)
+            return null;
+
         NodeList nodeList = element.getElementsByTagName(tagName);
         if (nodeList == null || nodeList.getLength() == 0)
             return null;
@@ -28,6 +31,9 @@ public class ForecastParser {
     }
 
     private static String getText(Element element) {
+        if (element == null)
+            return null;
+
         StringBuilder buf = new StringBuilder();
         NodeList list = element.getChildNodes();
         boolean found = false;
@@ -49,6 +55,7 @@ public class ForecastParser {
             Document doc = builder.parse(uri);
             parseDoc(context, doc, cityCode);
         } catch (Exception ex) {
+            Log.e("ForecastParser", "Exception", ex);
         }
     }
 
@@ -59,12 +66,14 @@ public class ForecastParser {
 
             //get current conditions
             Element currentConds = getFirstElementByTagName(doc.getDocumentElement(), "currentConditions");
-            Date currCondDate = getDate(fmt, currentConds);
             String summary = getText(getFirstElementByTagName(currentConds, "condition"));
-            int iconCode = Integer.parseInt(getText(getFirstElementByTagName(currentConds, "iconCode")));
-            double temperature = Double.parseDouble(getText(getFirstElementByTagName(currentConds, "temperature")));
-            //TODO: allow for string temperature instead of int
-            addForecast(cityCode, currCondDate, null, summary, iconCode, null, (int) Math.round(temperature), context);
+            if (summary != null && !summary.isEmpty()) {
+                Date currCondDate = getDate(fmt, currentConds);
+                int iconCode = Integer.parseInt(getText(getFirstElementByTagName(currentConds, "iconCode")));
+                double temperature = Double.parseDouble(getText(getFirstElementByTagName(currentConds, "temperature")));
+                //TODO: allow for string temperature instead of int?
+                addForecast(cityCode, currCondDate, null, summary, iconCode, null, (int) Math.round(temperature), context);
+            }
 
             //get the forecasts
             Element forecastGroup = getFirstElementByTagName(doc.getDocumentElement(), "forecastGroup");
@@ -77,7 +86,7 @@ public class ForecastParser {
                     summary = getSummary(forecast);
 
                     Element abbrevForecast = getFirstElementByTagName(forecast, "abbreviatedForecast");
-                    iconCode = Integer.parseInt(getText(getFirstElementByTagName(abbrevForecast, "iconCode")));
+                    int iconCode = Integer.parseInt(getText(getFirstElementByTagName(abbrevForecast, "iconCode")));
                     NodeList temps = getFirstElementByTagName(forecast, "temperatures").getElementsByTagName("temperature");
                     Integer low = null;
                     Integer high = null;
@@ -93,6 +102,9 @@ public class ForecastParser {
                         }
                     }
                     addForecast(cityCode, forecastDate, name, summary, iconCode, low, high, context);
+                    //just save the forecast date once
+                    if (ii == 0)
+                        forecastDate = null;
                 }
             }
         } catch (Exception ex) {

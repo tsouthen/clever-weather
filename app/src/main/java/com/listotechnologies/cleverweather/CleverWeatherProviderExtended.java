@@ -55,15 +55,15 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
             SQLiteDatabase db;
             try {
                 db = myOpenHelper.getWritableDatabase();
-                String minProj = String.format("min(%s)", FORECAST_UTCISSUETIME_COLUMN);
-                Cursor cursor = db.query(FORECAST_TABLE, new String[] { minProj }, selection, selectionArgs, null, null, null);
+                String issueProjection = String.format("max(%s)", FORECAST_UTCISSUETIME_COLUMN);
+                Cursor cursor = db.query(FORECAST_TABLE, new String[] { issueProjection }, selection, selectionArgs, null, null, null);
                 cursor.moveToFirst();
                 boolean requery = cursor.isNull(0);
                 if (!requery) {
-                    //if value is over an hour old, delete and re-query
-                    long expiryTIme = cursor.getLong(0) + 3600000;
+                    //if value is over 2 hours old, delete and re-query
+                    long expiryTime = cursor.getLong(0) + 7200000;
                     Date now = new Date();
-                    if (now.getTime() > expiryTIme)
+                    if (now.getTime() > expiryTime)
                         requery = true;
                 }
                 cursor.close();

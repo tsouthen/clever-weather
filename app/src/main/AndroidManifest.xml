@@ -24,13 +24,11 @@
         <activity
             android:name=".ProvinceActivity"
             android:parentActivityName=".TabbedActivity" >
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.listotechnologies.cleverweather.TabbedActivity" />
         </activity>
         <activity
             android:name=".SearchCitiesActivity"
-            android:label="@string/title_search_cities">
+            android:label="@string/title_search_cities"
+            android:parentActivityName=".TabbedActivity" >
             <intent-filter>
                 <action android:name="android.intent.action.SEARCH" />
             </intent-filter>

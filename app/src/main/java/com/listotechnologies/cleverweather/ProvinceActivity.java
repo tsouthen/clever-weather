@@ -2,6 +2,7 @@ package com.listotechnologies.cleverweather;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.MenuItem;
 
 public class ProvinceActivity extends Activity {
 
@@ -19,5 +20,15 @@ public class ProvinceActivity extends Activity {
             String provAbbr = getIntent().getStringExtra(EXTRA_PROVINCE_ABBR);
             getFragmentManager().beginTransaction().add(android.R.id.content, CitiesFragment.newProvinceInstance(provAbbr)).commit();
         }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                onBackPressed();
+                return true;
+        }
+        return(super.onOptionsItemSelected(item));
     }
 }
