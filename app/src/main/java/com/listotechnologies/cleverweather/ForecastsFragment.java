@@ -16,6 +16,10 @@ import android.widget.ImageView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
+import java.text.DateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 public class ForecastsFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
     private SimpleCursorAdapter m_adapter;
     private SwipeRefreshLayout mSwipeRefresh;
@@ -80,6 +84,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 CleverWeatherProvider.FORECAST_HIGHTEMP_COLUMN,
                 CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN,
                 CleverWeatherProvider.FORECAST_ICONCODE_COLUMN,
+                CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN,
         };
 
         String cityCode = "bogus";
@@ -103,9 +108,12 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     }
 
     private static class ForecastAdapter extends SimpleCursorAdapter {
+        private Locale mLocale;
+
         public ForecastAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flags) {
             super(context, layout, c, from, to, flags);
             setViewBinder(mViewBinder);
+            mLocale = context.getResources().getConfiguration().locale;
         }
 
         @Override
@@ -143,25 +151,48 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         private final ViewBinder mViewBinder = new ViewBinder() {
             @Override
             public boolean setViewValue(View view, Cursor cursor, int i) {
-                if (view.getId() == R.id.hightemp) {
-                    String highText = cursor.getString(i);
-                    String lowText = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN));
-                    String name = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_NAME_COLUMN));
-                    String textVal = null;
-                    if (highText != null && lowText != null) {
-                        textVal = String.format("%s° | %s°", highText, lowText);
-                    } else if (highText != null && name == null) {
-                        textVal = String.format("%s°", highText);
-                    } else if (highText != null) {
-                        textVal = String.format("↑ %s°", highText);
-                    } else if (lowText != null) {
-                        textVal = String.format("↓ %s°", lowText);
-                    }
-                    if (textVal != null)
-                        ((TextView) view).setText(textVal);
-                    return true;
+                switch (view.getId()) {
+                    case R.id.hightemp:
+                        return bindHighTemp((TextView) view, cursor, i);
+                    case android.R.id.text2:
+                        return bindText2((TextView) view, cursor, i);
                 }
                 return false;
+            }
+
+            private boolean bindText2(TextView view, Cursor cursor, int i) {
+                String name = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_NAME_COLUMN));
+                if (name == null || name.isEmpty()) {
+                    long timeStamp = cursor.getLong(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN));
+                    if (timeStamp > 0) {
+                        String text = cursor.getString(i);
+                        Date utc = new Date(timeStamp);
+                        String asOf = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, mLocale).format(utc);
+                        text += String.format("\n\nas of %s", asOf);
+                        ((TextView) view).setText(text);
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            private boolean bindHighTemp(TextView view, Cursor cursor, int i) {
+                String highText = cursor.getString(i);
+                String lowText = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN));
+                String name = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_NAME_COLUMN));
+                String textVal = null;
+                if (highText != null && lowText != null) {
+                    textVal = String.format("%s° | %s°", highText, lowText);
+                } else if (highText != null && name == null) {
+                    textVal = String.format("%s°", highText);
+                } else if (highText != null) {
+                    textVal = String.format("↑ %s°", highText);
+                } else if (lowText != null) {
+                    textVal = String.format("↓ %s°", lowText);
+                }
+                if (textVal != null)
+                    ((TextView) view).setText(textVal);
+                return true;
             }
         };
     }

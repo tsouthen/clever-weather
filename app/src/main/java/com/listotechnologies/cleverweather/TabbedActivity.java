@@ -50,8 +50,6 @@ public class TabbedActivity extends Activity
 
         if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS)
             mLocationClient = new LocationClient(this, this, this);
-
-        ForecastParser.uriTest(this);
     }
 
     @Override
