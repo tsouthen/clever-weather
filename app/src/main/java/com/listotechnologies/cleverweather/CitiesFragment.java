@@ -2,17 +2,24 @@ package com.listotechnologies.cleverweather;
 
 import android.app.ListFragment;
 import android.app.LoaderManager;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
@@ -75,6 +82,8 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
+        registerForContextMenu(getListView());
 
         int resId = 0;
         String[] dataColumns = { CleverWeatherProvider.CITY_NAMEEN_COLUMN };
@@ -194,5 +203,48 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         boolean isFavorite = cursor.getInt(3) != 0;
         intent.putExtra(ForecastsActivity.EXTRA_IS_FAVORITE, isFavorite);
         startActivity(intent);
+    }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        if (v.getId() == android.R.id.list) {
+            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)menuInfo;
+            Cursor cursor = (Cursor) m_adapter.getItem(info.position);
+            boolean isFavorite = cursor.getInt(3) != 0;
+            menu.setHeaderTitle(cursor.getString(2));
+            if (isFavorite)
+                menu.add(Menu.NONE, Menu.FIRST, Menu.NONE, getResources().getString(R.string.remove_from_favorites));
+            else
+                menu.add(Menu.NONE, Menu.FIRST + 1, Menu.NONE, getResources().getString(R.string.add_to_favorites));
+            return;
+        }
+        super.onCreateContextMenu(menu, v, menuInfo);
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        if (item.getItemId() == Menu.FIRST || item.getItemId() == Menu.FIRST + 1) {
+            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
+            Cursor cursor = (Cursor) m_adapter.getItem(info.position);
+            String cityCode = cursor.getString(1);
+            boolean isFavorite = item.getItemId() != Menu.FIRST;
+            setIsFavorite(getActivity().getContentResolver(), cityCode, isFavorite);
+            return true;
+        }
+        return super.onContextItemSelected(item);
+    }
+
+    public static void setIsFavorite(final ContentResolver contentResolver, final String cityCode, final boolean isFavorite) {
+        AsyncTask<Void, Void, Void> task = new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... voids) {
+                ContentValues values = new ContentValues();
+                values.put(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN, isFavorite);
+                String where = CleverWeatherProvider.CITY_CODE_COLUMN + "=?";
+                contentResolver.update(CleverWeatherProvider.CITY_URI, values, where, new String[] {cityCode});
+                return null;
+            }
+        };
+        task.execute();
     }
 }

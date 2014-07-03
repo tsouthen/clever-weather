@@ -2,23 +2,19 @@ package com.listotechnologies.cleverweather;
 
 import android.app.ListFragment;
 import android.app.LoaderManager;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CursorAdapter;
 import android.widget.ImageView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
@@ -157,17 +153,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
     private void setIsFavorite(final boolean isFavorite) {
         final String cityCode = getArguments().getString(ARG_CITY_CODE);
-        AsyncTask<String, Integer, Long> task = new AsyncTask<String, Integer, Long>() {
-            @Override
-            protected Long doInBackground(String... strings) {
-                ContentValues values = new ContentValues();
-                values.put(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN, isFavorite);
-                String where = CleverWeatherProvider.CITY_CODE_COLUMN + "=?";
-                getActivity().getContentResolver().update(CleverWeatherProvider.CITY_URI, values, where, new String[] {cityCode});
-                return null;
-            }
-        };
-        task.execute();
+        CitiesFragment.setIsFavorite(getActivity().getContentResolver(), cityCode, isFavorite);
     }
 
     private static class ForecastAdapter extends SimpleCursorAdapter {
