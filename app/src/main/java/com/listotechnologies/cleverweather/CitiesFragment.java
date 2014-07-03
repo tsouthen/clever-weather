@@ -124,6 +124,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
                 CleverWeatherProvider.ROW_ID,
                 CleverWeatherProvider.CITY_CODE_COLUMN,
                 CleverWeatherProvider.CITY_NAMEEN_COLUMN,
+                CleverWeatherProvider.CITY_ISFAVORITE_COLUMN,
         };
 
         Filter filter = getFilterFromArguments();
@@ -190,6 +191,8 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         Intent intent = new Intent(getActivity(), ForecastsActivity.class);
         intent.putExtra(ForecastsActivity.EXTRA_CITY_CODE, cursor.getString(1));
         intent.putExtra(ForecastsActivity.EXTRA_CITY_NAME, cursor.getString(2));
+        boolean isFavorite = cursor.getInt(3) != 0;
+        intent.putExtra(ForecastsActivity.EXTRA_IS_FAVORITE, isFavorite);
         startActivity(intent);
     }
 }

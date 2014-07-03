@@ -2,13 +2,20 @@ package com.listotechnologies.cleverweather;
 
 import android.app.ListFragment;
 import android.app.LoaderManager;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CursorAdapter;
@@ -21,28 +28,37 @@ import java.util.Date;
 import java.util.Locale;
 
 public class ForecastsFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
-    private SimpleCursorAdapter m_adapter;
+    private SimpleCursorAdapter mAdapter;
     private SwipeRefreshLayout mSwipeRefresh;
 
+    private static final String FORCE_REFRESH = "ForceRefresh";
     public static final String ARG_CITY_CODE = "ARG_CITY_CODE";
+    public static final String ARG_IS_FAVORITE = "ARG_IS_FAVORITE";
 
-    public static ForecastsFragment newInstance(String cityCode) {
+    public static ForecastsFragment newInstance(String cityCode, boolean isFavorite) {
         ForecastsFragment frag = new ForecastsFragment();
         Bundle bundle = new Bundle();
         bundle.putString(ARG_CITY_CODE, cityCode);
+        bundle.putBoolean(ARG_IS_FAVORITE, isFavorite);
         frag.setArguments(bundle);
         return frag;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.swipe_refresh, container, false);
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
-        mSwipeRefresh.setColorScheme(R.color.swipe_color_1, R.color.swipe_color_2, R.color.swipe_color_3, R.color.swipe_color_4);
+        mSwipeRefresh.setColorScheme(R.color.swipe_color_4, R.color.swipe_color_3, R.color.swipe_color_2, R.color.swipe_color_1);
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                getLoaderManager().restartLoader(0, null, ForecastsFragment.this);
+                restartLoaderForceRefresh();
             }
         });
         return view;
@@ -52,7 +68,6 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        int resId = 0;
         String[] dataColumns = {
                 CleverWeatherProvider.FORECAST_NAME_COLUMN,
                 CleverWeatherProvider.FORECAST_SUMMARY_COLUMN,
@@ -68,14 +83,13 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 R.id.icon
         };
 
-        m_adapter = new ForecastAdapter(getActivity(), R.layout.forecast_item, null, dataColumns, viewIds, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
-        setListAdapter(m_adapter);
+        mAdapter = new ForecastAdapter(getActivity(), R.layout.forecast_item, null, dataColumns, viewIds, 0);
+        setListAdapter(mAdapter);
         getLoaderManager().initLoader(0, null, this);
     }
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        mSwipeRefresh.setRefreshing(true);
         String orderBy = CleverWeatherProvider.ROW_ID;
         String[] projection = {
                 CleverWeatherProvider.ROW_ID,
@@ -92,28 +106,78 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         if (args != null)
             cityCode = args.getString(ARG_CITY_CODE);
         String where = CleverWeatherProvider.FORECAST_CITYCODE_COLUMN + "=?";
-        return new CursorLoader(getActivity(), CleverWeatherProvider.FORECAST_URI, projection, where, new String[] { cityCode }, orderBy);
+        boolean forceRefresh = bundle != null && bundle.getBoolean(FORCE_REFRESH);
+        //TODO: only show this when we're actually refreshing from internet
+        mSwipeRefresh.setRefreshing(true);
+        return new ForecastsLoader(getActivity(), CleverWeatherProvider.FORECAST_URI, projection, where, new String[] { cityCode }, orderBy, forceRefresh);
     }
 
     @Override
     public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
         mSwipeRefresh.setRefreshing(false);
-        m_adapter.swapCursor(cursor);
+        mAdapter.changeCursor(cursor);
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
         mSwipeRefresh.setRefreshing(false);
-        m_adapter.swapCursor(null);
+        mAdapter.changeCursor(null);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.forecasts, menu);
+        MenuItem isFav = menu.findItem(R.id.menu_is_favorite);
+        if (isFav != null)
+            isFav.setChecked(getArguments().getBoolean(ARG_IS_FAVORITE));
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_refresh) {
+            mSwipeRefresh.setRefreshing(true);
+            restartLoaderForceRefresh();
+        } else if (item.getItemId() == R.id.menu_is_favorite) {
+            //toggle check state
+            boolean isFav = !item.isChecked();
+            item.setChecked(isFav);
+            getArguments().putBoolean(ARG_IS_FAVORITE, isFav);
+            //update City database in background thread
+            setIsFavorite(isFav);
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void restartLoaderForceRefresh() {
+        Bundle bundle = new Bundle();
+        bundle.putBoolean(FORCE_REFRESH, true);
+        getLoaderManager().restartLoader(0, bundle, this);
+    }
+
+    private void setIsFavorite(final boolean isFavorite) {
+        final String cityCode = getArguments().getString(ARG_CITY_CODE);
+        AsyncTask<String, Integer, Long> task = new AsyncTask<String, Integer, Long>() {
+            @Override
+            protected Long doInBackground(String... strings) {
+                ContentValues values = new ContentValues();
+                values.put(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN, isFavorite);
+                String where = CleverWeatherProvider.CITY_CODE_COLUMN + "=?";
+                getActivity().getContentResolver().update(CleverWeatherProvider.CITY_URI, values, where, new String[] {cityCode});
+                return null;
+            }
+        };
+        task.execute();
     }
 
     private static class ForecastAdapter extends SimpleCursorAdapter {
         private Locale mLocale;
+        private Context mContext;
 
         public ForecastAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flags) {
             super(context, layout, c, from, to, flags);
             setViewBinder(mViewBinder);
-            mLocale = context.getResources().getConfiguration().locale;
+            mContext = context;
         }
 
         @Override
@@ -121,7 +185,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             switch (v.getId()) {
                 case android.R.id.text1:
                     if (text == null || text.length() == 0)
-                        text = "Current Conditions";
+                        text = mContext.getString(R.string.current_conditions);
                     break;
             }
             super.setViewText(v, text);
@@ -167,6 +231,8 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                     if (timeStamp > 0) {
                         String text = cursor.getString(i);
                         Date utc = new Date(timeStamp);
+                        if (mLocale == null)
+                            mLocale = mContext.getResources().getConfiguration().locale;
                         String asOf = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, mLocale).format(utc);
                         text += String.format("\n\nas of %s", asOf);
                         ((TextView) view).setText(text);
@@ -195,5 +261,32 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 return true;
             }
         };
+
+    }
+
+    private static class ForecastsLoader extends CursorLoader {
+        private boolean mForceRefresh;
+
+        public ForecastsLoader(Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder, boolean forceRefresh) {
+            super(context, uri, projection, selection, selectionArgs, sortOrder);
+            mForceRefresh = forceRefresh;
+        }
+
+        @Override
+        public Cursor loadInBackground() {
+            if (mForceRefresh) {
+                //Use the db directly instead of through the content provider as this didn't seem to
+                // work, ended up with duplicate data. Perhaps the content provider wraps things in
+                // a transaction
+                int rowsDeleted = 0;
+                CleverWeatherDbHelper helper = new CleverWeatherDbHelper(getContext());
+                helper.open();
+                rowsDeleted = helper.mDb.delete(CleverWeatherDbHelper.FORECAST_TABLE, getSelection(), getSelectionArgs());
+                //rowsDeleted = getContext().getContentResolver().delete(getUri(), getSelection(), getSelectionArgs());
+                helper.close();
+                mForceRefresh = false;
+            }
+            return super.loadInBackground();
+        }
     }
 }

@@ -2,17 +2,14 @@ package com.listotechnologies.cleverweather;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.net.Uri;
-import android.os.CancellationSignal;
 import android.util.Log;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Date;
 
@@ -80,7 +77,7 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
                     if (cityCode != null) {
                         String provAbbr = getProvinceForCityCode(db, cityCode);
                         if (provAbbr != null) {
-                            db.delete(FORECAST_TABLE, selection, selectionArgs);
+                            int rowsDeleted = db.delete(FORECAST_TABLE, selection, selectionArgs);
                             ForecastParser.parseXml(getContext(), provAbbr, cityCode);
                         }
                     }

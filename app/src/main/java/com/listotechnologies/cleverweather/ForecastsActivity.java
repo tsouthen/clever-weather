@@ -7,17 +7,21 @@ import android.view.MenuItem;
 public class ForecastsActivity extends Activity {
     public static final String EXTRA_CITY_CODE = "EXTRA_CITY_CODE";
     public static final String EXTRA_CITY_NAME = "EXTRA_CITY_NAME";
+    public static final String EXTRA_IS_FAVORITE = "EXTRA_IS_FAVORITE";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         String cityName = getIntent().getStringExtra(EXTRA_CITY_NAME);
         if (cityName != null)
             setTitle(cityName);
 
         if (savedInstanceState == null) {
             String cityCode = getIntent().getStringExtra(EXTRA_CITY_CODE);
-            getFragmentManager().beginTransaction().add(android.R.id.content, ForecastsFragment.newInstance(cityCode)).commit();
+            boolean isFavorite = getIntent().getBooleanExtra(EXTRA_IS_FAVORITE, false);
+            ForecastsFragment fragment = ForecastsFragment.newInstance(cityCode, isFavorite);
+            getFragmentManager().beginTransaction().add(android.R.id.content, fragment).commit();
         }
     }
 
