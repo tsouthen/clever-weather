@@ -256,7 +256,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                         if (mLocale == null)
                             mLocale = mContext.getResources().getConfiguration().locale;
                         String asOf = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, mLocale).format(utc);
-                        if (text != null && !text.isEmpty())
+                        if (!text.isEmpty())
                             text += "\n";
                         text += String.format("as of %s", asOf);
                         ((TextView)view).setText(text);

@@ -24,6 +24,8 @@ import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 
+import java.util.ArrayList;
+
 public class CitiesFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
     private SimpleCursorAdapter m_adapter;
     private SwipeRefreshLayout mSwipeRefresh;
@@ -136,12 +138,11 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
             mSwipeRefresh.setRefreshing(true);
         String where = null;
         String orderBy = CleverWeatherProvider.CITY_NAMEEN_COLUMN + " COLLATE UNICODE";
-        String[] projection = {
-                CleverWeatherProvider.ROW_ID,
-                CleverWeatherProvider.CITY_CODE_COLUMN,
-                CleverWeatherProvider.CITY_NAMEEN_COLUMN,
-                CleverWeatherProvider.CITY_ISFAVORITE_COLUMN,
-        };
+        ArrayList<String> projection = new ArrayList<String>();
+        projection.add(CleverWeatherProvider.ROW_ID);
+        projection.add(CleverWeatherProvider.CITY_CODE_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
 
         Filter filter = getFilterFromArguments();
         switch (filter.Mode) {
@@ -155,12 +156,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
             case Location:
                 String colName = "dist";
-                projection = new String[] {
-                        CleverWeatherProvider.ROW_ID,
-                        CleverWeatherProvider.CITY_CODE_COLUMN,
-                        CleverWeatherProvider.CITY_NAMEEN_COLUMN,
-                        getDistanceProjection(colName)
-                };
+                projection.add(getDistanceProjection(colName));
                 orderBy = colName + " limit 10";
                 break;
 
@@ -168,8 +164,8 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
                 where = CleverWeatherProvider.CITY_NAMEEN_COLUMN + " LIKE '" + filter.Arguments + "%'";
                 break;
         }
-
-        return new CursorLoader(getActivity(), CleverWeatherProvider.CITY_URI, projection, where, null, orderBy);
+        String[] projectionArray = projection.toArray(new String[projection.size()]);
+        return new CursorLoader(getActivity(), CleverWeatherProvider.CITY_URI, projectionArray, where, null, orderBy);
     }
 
     @Override
