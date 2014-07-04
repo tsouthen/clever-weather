@@ -47,6 +47,7 @@ public class TabbedActivity extends Activity
         PagerTabStrip pts = (PagerTabStrip) mViewPager.findViewById(R.id.pager_tab_strip);
         pts.setTabIndicatorColor(0xff8800);
         mViewPager.setAdapter(mSectionsPagerAdapter);
+        mViewPager.setCurrentItem(1);
 
         if (GooglePlayServicesUtil.isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS)
             mLocationClient = new LocationClient(this, this, this);
@@ -121,15 +122,14 @@ public class TabbedActivity extends Activity
 
         @Override
         public Fragment getItem(int position) {
-            if (position == 0)
-                return CitiesFragment.newFavoritesInstance();
-
-            if (position == 1)
-                return ProvincesFragment.newInstance();
-
-            if (position == 2)
-                return CitiesFragment.newLocationInstance();
-
+            switch (position) {
+                case 0:
+                    return CitiesFragment.newLocationInstance();
+                case 1:
+                    return CitiesFragment.newFavoritesInstance();
+                case 2:
+                    return ProvincesFragment.newInstance();
+            }
             return PlaceholderFragment.newInstance(position);
         }
 
@@ -143,11 +143,11 @@ public class TabbedActivity extends Activity
             Locale l = Locale.getDefault();
             switch (position) {
                 case 0:
-                    return getString(R.string.title_favorites).toUpperCase(l);
-                case 1:
-                    return getString(R.string.title_browse).toUpperCase(l);
-                case 2:
                     return getString(R.string.title_location).toUpperCase(l);
+                case 1:
+                    return getString(R.string.title_favorites).toUpperCase(l);
+                case 2:
+                    return getString(R.string.title_browse).toUpperCase(l);
             }
             return null;
         }

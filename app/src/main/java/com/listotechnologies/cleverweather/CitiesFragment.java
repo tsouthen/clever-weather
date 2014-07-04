@@ -67,15 +67,17 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.swipe_refresh, container, false);
+        View view = inflater.inflate(R.layout.fragment_cities, container, false);
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
-        mSwipeRefresh.setColorScheme(R.color.swipe_color_1, R.color.swipe_color_2, R.color.swipe_color_3, R.color.swipe_color_4);
-        mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                getLoaderManager().restartLoader(0, null, CitiesFragment.this);
-            }
-        });
+        if (mSwipeRefresh != null) {
+            mSwipeRefresh.setColorScheme(R.color.swipe_color_1, R.color.swipe_color_2, R.color.swipe_color_3, R.color.swipe_color_4);
+            mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+                @Override
+                public void onRefresh() {
+                    getLoaderManager().restartLoader(0, null, CitiesFragment.this);
+                }
+            });
+        }
         return view;
     }
 
@@ -126,7 +128,8 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        mSwipeRefresh.setRefreshing(true);
+        if (mSwipeRefresh != null)
+            mSwipeRefresh.setRefreshing(true);
         String where = null;
         String orderBy = CleverWeatherProvider.CITY_NAMEEN_COLUMN + " COLLATE UNICODE";
         String[] projection = {
@@ -167,13 +170,15 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
     @Override
     public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
-        mSwipeRefresh.setRefreshing(false);
+        if (mSwipeRefresh != null)
+            mSwipeRefresh.setRefreshing(false);
         m_adapter.swapCursor(cursor);
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
-        mSwipeRefresh.setRefreshing(false);
+        if (mSwipeRefresh != null)
+            mSwipeRefresh.setRefreshing(false);
         m_adapter.swapCursor(null);
     }
 

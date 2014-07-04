@@ -66,13 +66,16 @@ public class ForecastParser {
 
             //get current conditions
             Element currentConds = getFirstElementByTagName(doc.getDocumentElement(), "currentConditions");
-            String summary = getText(getFirstElementByTagName(currentConds, "condition"));
-            if (summary != null && !summary.isEmpty()) {
+            String tempStr = getText(getFirstElementByTagName(currentConds, "temperature"));
+            if (tempStr != null && !tempStr.isEmpty()) {
+                String summary = getText(getFirstElementByTagName(currentConds, "condition"));
                 Date currCondDate = getDate(fmt, currentConds);
-                int iconCode = Integer.parseInt(getText(getFirstElementByTagName(currentConds, "iconCode")));
-                double temperature = Double.parseDouble(getText(getFirstElementByTagName(currentConds, "temperature")));
+                String iconCodeStr = getText(getFirstElementByTagName(currentConds, "iconCode"));
+                Integer iconCode = null;
+                if (iconCodeStr != null && !iconCodeStr.isEmpty())
+                    iconCode = Integer.parseInt(iconCodeStr);
                 //TODO: allow for string temperature instead of int?
-                addForecast(cityCode, currCondDate, null, summary, iconCode, null, (int) Math.round(temperature), context);
+                addForecast(cityCode, currCondDate, null, summary, iconCode, null, (int) Math.round(Double.parseDouble(tempStr)), context);
             }
 
             //get the forecasts
@@ -83,7 +86,7 @@ public class ForecastParser {
                 for (int ii=0; ii < forecastList.getLength(); ii++) {
                     Element forecast = (Element) forecastList.item(ii);
                     String name = getFirstElementByTagName(forecast, "period").getAttribute("textForecastName");
-                    summary = getSummary(forecast);
+                    String summary = getSummary(forecast);
 
                     Element abbrevForecast = getFirstElementByTagName(forecast, "abbreviatedForecast");
                     int iconCode = Integer.parseInt(getText(getFirstElementByTagName(abbrevForecast, "iconCode")));

@@ -16,6 +16,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
@@ -48,7 +49,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.swipe_refresh, container, false);
+        View view = inflater.inflate(R.layout.fragment_forecasts, container, false);
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
         mSwipeRefresh.setColorScheme(R.color.swipe_color_4, R.color.swipe_color_3, R.color.swipe_color_2, R.color.swipe_color_1);
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -146,6 +147,8 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     }
 
     private void restartLoaderForceRefresh() {
+        //close the cursor so it isn't notified of changes we're about to make
+        mAdapter.getCursor().close();
         Bundle bundle = new Bundle();
         bundle.putBoolean(FORCE_REFRESH, true);
         getLoaderManager().restartLoader(0, bundle, this);
@@ -156,6 +159,25 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         CitiesFragment.setIsFavorite(getActivity().getContentResolver(), cityCode, isFavorite);
     }
 
+    @Override
+    public void onListItemClick(ListView l, View v, int position, long id) {
+        //toggle visibility of text2 and expand
+        swapVisibility(v.findViewById(android.R.id.text2));
+        swapVisibility(v.findViewById(R.id.expand));
+        super.onListItemClick(l, v, position, id);
+    }
+
+    private void swapVisibility(View view) {
+        int vis = view.getVisibility();
+        if (vis == View.GONE || vis == View.VISIBLE) {
+            if (vis == View.GONE)
+                vis = View.VISIBLE;
+            else
+                vis = View.GONE;
+            view.setVisibility(vis);
+        }
+    }
+
     private static class ForecastAdapter extends SimpleCursorAdapter {
         private Locale mLocale;
         private Context mContext;
@@ -164,6 +186,22 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             super(context, layout, c, from, to, flags);
             setViewBinder(mViewBinder);
             mContext = context;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            View view = super.getView(position, convertView, parent);
+            setVisibility(view, android.R.id.text2, View.GONE);
+            setVisibility(view, R.id.expand, View.VISIBLE);
+            return view;
+        }
+
+        private void setVisibility(View parent, int viewId, int visibility) {
+            if (parent != null) {
+                View view = parent.findViewById(viewId);
+                if (view != null)
+                    view.setVisibility(visibility);
+            }
         }
 
         @Override
@@ -189,13 +227,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 }
             }
 
-            if (iconCode != 29) {
-                v.setVisibility(View.VISIBLE);
-                int id = R.drawable.cbc_white_00 + iconCode;
-                v.setImageResource(id);
-            } else {
-                v.setVisibility(View.INVISIBLE);
-            }
+            v.setVisibility(View.VISIBLE);
+            int id = R.drawable.cbc_white_00 + iconCode;
+            v.setImageResource(id);
         }
 
         private final ViewBinder mViewBinder = new ViewBinder() {
@@ -216,11 +250,15 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                     long timeStamp = cursor.getLong(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN));
                     if (timeStamp > 0) {
                         String text = cursor.getString(i);
+                        if (text == null)
+                            text = "";
                         Date utc = new Date(timeStamp);
                         if (mLocale == null)
                             mLocale = mContext.getResources().getConfiguration().locale;
                         String asOf = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, mLocale).format(utc);
-                        text += String.format("\n\nas of %s", asOf);
+                        if (text != null && !text.isEmpty())
+                            text += "\n\n";
+                        text += String.format("as of %s", asOf);
                         ((TextView) view).setText(text);
                         return true;
                     }
@@ -238,9 +276,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 } else if (highText != null && name == null) {
                     textVal = String.format("%s°", highText);
                 } else if (highText != null) {
-                    textVal = String.format("↑ %s°", highText);
+                    textVal = String.format("%s°", highText);
                 } else if (lowText != null) {
-                    textVal = String.format("↓ %s°", lowText);
+                    textVal = String.format("low %s°", lowText);
                 }
                 if (textVal != null)
                     ((TextView) view).setText(textVal);

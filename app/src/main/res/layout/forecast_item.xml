@@ -64,6 +64,22 @@
         android:text="Mix of sun and clouds, high of 25, low of 12. Cooler in higher areas overnight."
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:layout_marginRight="4dip" 
-        android:paddingBottom="4dip" />
+        android:paddingBottom="4dip"
+        android:visibility="gone"
+        />
+
+    <TextView
+        android:id="@+id/expand"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@android:id/text1"
+        android:layout_toRightOf="@id/icon"
+        android:text="&#x2026;"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:layout_marginRight="4dip"
+        android:paddingBottom="4dip"
+        android:visibility="visible"
+        />
+
 
 </RelativeLayout>
