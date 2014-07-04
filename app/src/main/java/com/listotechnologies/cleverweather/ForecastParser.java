@@ -1,6 +1,5 @@
 package com.listotechnologies.cleverweather;
 
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.util.Log;
@@ -12,6 +11,7 @@ import org.w3c.dom.NodeList;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -47,20 +47,23 @@ public class ForecastParser {
         return found ? buf.toString() : null;
     }
 
-    public static void parseXml(Context context, String provinceAbbr, String cityCode) {
+    public static ArrayList<ContentValues> parseXml(Context context, String provinceAbbr, String cityCode) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             String uri = "http://dd.weatheroffice.ec.gc.ca/citypage_weather/xml/" + provinceAbbr + "/" + cityCode + "_e.xml";
             Document doc = builder.parse(uri);
-            parseDoc(context, doc, cityCode);
+            return parseDoc(context, doc, cityCode);
         } catch (Exception ex) {
             Log.e("ForecastParser", "Exception", ex);
+            return null;
         }
     }
 
-    public static void parseDoc(Context context, Document doc, String cityCode) {
+    public static ArrayList<ContentValues> parseDoc(Context context, Document doc, String cityCode) {
         try {
+            ArrayList<ContentValues> newValues = new ArrayList<ContentValues>();
+
             SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMddHHmmss");
             fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
 
@@ -75,7 +78,7 @@ public class ForecastParser {
                 if (iconCodeStr != null && !iconCodeStr.isEmpty())
                     iconCode = Integer.parseInt(iconCodeStr);
                 //TODO: allow for string temperature instead of int?
-                addForecast(cityCode, currCondDate, null, summary, iconCode, null, (int) Math.round(Double.parseDouble(tempStr)), context);
+                newValues.add(newForecastValues(cityCode, currCondDate, null, summary, iconCode, null, (int) Math.round(Double.parseDouble(tempStr))));
             }
 
             //get the forecasts
@@ -104,14 +107,16 @@ public class ForecastParser {
                                 high = tempValue;
                         }
                     }
-                    addForecast(cityCode, forecastDate, name, summary, iconCode, low, high, context);
+                    newValues.add(newForecastValues(cityCode, forecastDate, name, summary, iconCode, low, high));
                     //just save the forecast date once
                     if (ii == 0)
                         forecastDate = null;
                 }
             }
+            return newValues;
         } catch (Exception ex) {
             Log.e("ForecastParser", "Exception", ex);
+            return null;
         }
     }
 
@@ -166,7 +171,7 @@ public class ForecastParser {
         return utcDate;
     }
 
-    private static void addForecast(String cityCode, Date utcDate, String name, String summary, Integer iconCode, Integer low, Integer high, Context c) {
+    private static ContentValues newForecastValues(String cityCode, Date utcDate, String name, String summary, Integer iconCode, Integer low, Integer high) {
         ContentValues value = new ContentValues();
         if (cityCode != null)
             value.put(CleverWeatherProvider.FORECAST_CITYCODE_COLUMN, cityCode);
@@ -182,7 +187,9 @@ public class ForecastParser {
             value.put(CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN, low);
         if (high != null)
             value.put(CleverWeatherProvider.FORECAST_HIGHTEMP_COLUMN, high);
-        ContentResolver cr = c.getContentResolver();
-        cr.insert(CleverWeatherProvider.FORECAST_URI, value);
+
+        return value;
+        //ContentResolver cr = c.getContentResolver();
+        //cr.insert(CleverWeatherProvider.FORECAST_URI, value);
     }
 }

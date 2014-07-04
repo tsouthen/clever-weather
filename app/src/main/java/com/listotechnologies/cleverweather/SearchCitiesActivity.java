@@ -14,6 +14,8 @@ public class SearchCitiesActivity extends Activity {
         Intent intent = getIntent();
         if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
             String query = intent.getStringExtra(SearchManager.QUERY);
+            if (query != null)
+                query = query.trim();
             getFragmentManager().beginTransaction().add(android.R.id.content, CitiesFragment.newSearchInstance(query)).commit();
         }
     }

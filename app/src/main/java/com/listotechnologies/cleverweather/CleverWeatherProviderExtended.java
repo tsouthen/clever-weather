@@ -1,5 +1,6 @@
 package com.listotechnologies.cleverweather;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
@@ -11,6 +12,7 @@ import android.util.Log;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Date;
 
 public class CleverWeatherProviderExtended extends CleverWeatherProvider {
@@ -57,8 +59,8 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
                 cursor.moveToFirst();
                 boolean requery = cursor.isNull(0);
                 if (!requery) {
-                    //if value is over 2 hours old, delete and re-query
-                    long expiryTime = cursor.getLong(0) + 7200000;
+                    //if value is over 1 hour old, delete and re-query
+                    long expiryTime = cursor.getLong(0) + 3600000;
                     Date now = new Date();
                     if (now.getTime() > expiryTime)
                         requery = true;
@@ -77,8 +79,22 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
                     if (cityCode != null) {
                         String provAbbr = getProvinceForCityCode(db, cityCode);
                         if (provAbbr != null) {
-                            int rowsDeleted = db.delete(FORECAST_TABLE, selection, selectionArgs);
-                            ForecastParser.parseXml(getContext(), provAbbr, cityCode);
+                            ArrayList<ContentValues> newValues = ForecastParser.parseXml(getContext(), provAbbr, cityCode);
+                            if (newValues != null && newValues.size() > 0) {
+                                db.beginTransaction();
+                                boolean success = true;
+                                int rowsDeleted = db.delete(FORECAST_TABLE, selection, selectionArgs);
+                                for (ContentValues values : newValues) {
+                                    long id = db.insert(FORECAST_TABLE, null, values);
+                                    if (id == -1) {
+                                        success = false;
+                                        break;
+                                    }
+                                }
+                                if (success)
+                                    db.setTransactionSuccessful();
+                                db.endTransaction();
+                            }
                         }
                     }
                 }

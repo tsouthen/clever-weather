@@ -67,7 +67,11 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_cities, container, false);
+        int viewId = R.layout.fragment_cities;
+        if (getArguments().containsKey(ARG_LOCATION))
+            viewId = R.layout.fragment_cities_refresh;
+
+        View view = inflater.inflate(viewId, container, false);
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
         if (mSwipeRefresh != null) {
             mSwipeRefresh.setColorScheme(R.color.swipe_color_1, R.color.swipe_color_2, R.color.swipe_color_3, R.color.swipe_color_4);

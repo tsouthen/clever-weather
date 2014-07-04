@@ -209,7 +209,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             switch (v.getId()) {
                 case android.R.id.text1:
                     if (text == null || text.length() == 0)
-                        text = mContext.getString(R.string.current_conditions);
+                        text = mContext.getString(R.string.now);
                     break;
             }
             super.setViewText(v, text);
@@ -257,9 +257,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                             mLocale = mContext.getResources().getConfiguration().locale;
                         String asOf = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, mLocale).format(utc);
                         if (text != null && !text.isEmpty())
-                            text += "\n\n";
+                            text += "\n";
                         text += String.format("as of %s", asOf);
-                        ((TextView) view).setText(text);
+                        ((TextView)view).setText(text);
                         return true;
                     }
                 }

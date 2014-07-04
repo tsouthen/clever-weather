@@ -79,6 +79,7 @@
         android:layout_marginRight="4dip"
         android:paddingBottom="4dip"
         android:visibility="visible"
+        android:textColor="@android:color/darker_gray"
         />
 
 

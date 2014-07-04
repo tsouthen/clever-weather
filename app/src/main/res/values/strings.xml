@@ -42,7 +42,7 @@
 
     <string name="search_hint">Search Cities</string>
     <string name="title_search_cities">Search Cities</string>
-    <string name="current_conditions">Current Conditions</string>
+    <string name="now">Now</string>
     <string name="favorite">Favorite</string>
     <string name="refresh">Refresh</string>
     <string name="remove_from_favorites">Remove from Favorites</string>
