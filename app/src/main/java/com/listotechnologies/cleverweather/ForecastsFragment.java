@@ -21,6 +21,7 @@ import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
@@ -71,13 +72,15 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 CleverWeatherProvider.FORECAST_HIGHTEMP_COLUMN,
                 CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN,
                 CleverWeatherProvider.FORECAST_ICONCODE_COLUMN,
+                CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN,
         };
         int[] viewIds = {
                 android.R.id.text1,
                 android.R.id.text2,
                 R.id.hightemp,
                 R.id.lowtemp,
-                R.id.icon
+                R.id.icon,
+                R.id.time_stamp,
         };
 
         mAdapter = new ForecastAdapter(getActivity(), R.layout.forecast_item, null, dataColumns, viewIds, 0);
@@ -162,8 +165,12 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
         //toggle visibility of text2 and expand
-        swapVisibility(v.findViewById(android.R.id.text2));
+        View text2 = v.findViewById(android.R.id.text2);
+        swapVisibility(text2);
         swapVisibility(v.findViewById(R.id.expand));
+        TextView timeStamp = (TextView) v.findViewById(R.id.time_stamp);
+        if (timeStamp.getText().length() > 0)
+            timeStamp.setVisibility(text2.getVisibility());
         super.onListItemClick(l, v, position, id);
     }
 
@@ -181,6 +188,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     private static class ForecastAdapter extends SimpleCursorAdapter {
         private Locale mLocale;
         private Context mContext;
+        private SimpleDateFormat mTimeStampFmt;
 
         public ForecastAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flags) {
             super(context, layout, c, from, to, flags);
@@ -193,6 +201,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             View view = super.getView(position, convertView, parent);
             setVisibility(view, android.R.id.text2, View.GONE);
             setVisibility(view, R.id.expand, View.VISIBLE);
+            setVisibility(view, R.id.time_stamp, View.GONE);
             return view;
         }
 
@@ -238,32 +247,29 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 switch (view.getId()) {
                     case R.id.hightemp:
                         return bindHighTemp((TextView) view, cursor, i);
-                    case android.R.id.text2:
-                        return bindText2((TextView) view, cursor, i);
+                    case R.id.time_stamp:
+                        return bindTimeStamp((TextView) view, cursor, i);
                 }
                 return false;
             }
 
-            private boolean bindText2(TextView view, Cursor cursor, int i) {
-                String name = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_NAME_COLUMN));
-                if (name == null || name.isEmpty()) {
-                    long timeStamp = cursor.getLong(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN));
-                    if (timeStamp > 0) {
-                        String text = cursor.getString(i);
-                        if (text == null)
-                            text = "";
-                        Date utc = new Date(timeStamp);
-                        if (mLocale == null)
-                            mLocale = mContext.getResources().getConfiguration().locale;
-                        String asOf = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, mLocale).format(utc);
-                        if (!text.isEmpty())
-                            text += "\n";
-                        text += String.format("as of %s", asOf);
-                        ((TextView)view).setText(text);
-                        return true;
-                    }
+            private boolean bindTimeStamp(TextView view, Cursor cursor, int i) {
+                long timeStamp = cursor.getLong(i);
+                if (timeStamp > 0) {
+                    Date utc = new Date(timeStamp);
+                    if (mLocale == null)
+                        mLocale = mContext.getResources().getConfiguration().locale;
+                    if (mTimeStampFmt == null)
+                        mTimeStampFmt = new SimpleDateFormat("MMM d, h::mm a", mLocale);
+                    String asOf = mTimeStampFmt.format(utc);
+                    String text;
+                    if (cursor.getPosition() == 0)
+                        text = String.format("conditions as of %s", asOf);
+                    else
+                        text = String.format("forecast as of %s", asOf);
+                    ((TextView) view).setText(text);
                 }
-                return false;
+                return true;
             }
 
             private boolean bindHighTemp(TextView view, Cursor cursor, int i) {
