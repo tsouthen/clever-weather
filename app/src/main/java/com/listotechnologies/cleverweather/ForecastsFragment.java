@@ -26,7 +26,7 @@ import java.util.Date;
 import java.util.Locale;
 
 public class ForecastsFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
-    private SimpleCursorAdapter mAdapter;
+    private ForecastAdapter mAdapter;
     private SwipeRefreshLayout mSwipeRefresh;
 
     private static final String FORCE_REFRESH = "ForceRefresh";
@@ -171,6 +171,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         TextView timeStamp = (TextView) v.findViewById(R.id.time_stamp);
         if (timeStamp.getText().length() > 0)
             timeStamp.setVisibility(text2.getVisibility());
+        mAdapter.setExpanded(position, text2.getVisibility() == View.VISIBLE);
         super.onListItemClick(l, v, position, id);
     }
 
@@ -189,19 +190,34 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         private Locale mLocale;
         private Context mContext;
         private SimpleDateFormat mTimeStampFmt;
+        private boolean mExpanded[];
 
         public ForecastAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flags) {
             super(context, layout, c, from, to, flags);
             setViewBinder(mViewBinder);
             mContext = context;
+            mExpanded = null;
+            if (c != null)
+                mExpanded = new boolean[c.getCount()];
+        }
+
+        @Override
+        public Cursor swapCursor(Cursor c) {
+            mExpanded = new boolean[c.getCount()];
+            return super.swapCursor(c);
         }
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             View view = super.getView(position, convertView, parent);
-            setVisibility(view, android.R.id.text2, View.GONE);
-            setVisibility(view, R.id.expand, View.VISIBLE);
-            setVisibility(view, R.id.time_stamp, View.GONE);
+            boolean expanded = false;
+            if (mExpanded != null && position >= 0 && position < mExpanded.length)
+                expanded = mExpanded[position];
+
+            setVisibility(view, android.R.id.text2, expanded ? View.VISIBLE : View.GONE);
+            setVisibility(view, R.id.time_stamp, expanded ? View.VISIBLE : View.GONE);
+            setVisibility(view, R.id.expand, expanded ? View.GONE : View.VISIBLE);
+
             return view;
         }
 
@@ -239,6 +255,18 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             v.setVisibility(View.VISIBLE);
             int id = R.drawable.cbc_white_00 + iconCode;
             v.setImageResource(id);
+        }
+
+        public boolean getExpanded(int position) {
+            if (mExpanded == null || position < 0 || position >= mExpanded.length)
+                return false;
+
+            return mExpanded[position];
+        }
+
+        public void setExpanded(int position, boolean expanded) {
+            if (mExpanded != null && position >= 0 && position < mExpanded.length)
+                mExpanded[position] = expanded;
         }
 
         private final ViewBinder mViewBinder = new ViewBinder() {
@@ -291,7 +319,6 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 return true;
             }
         };
-
     }
 
     private static class ForecastsLoader extends CursorLoader {
