@@ -22,6 +22,7 @@ import android.widget.TextView;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
@@ -32,12 +33,45 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     private static final String FORCE_REFRESH = "ForceRefresh";
     public static final String ARG_CITY_CODE = "ARG_CITY_CODE";
     public static final String ARG_IS_FAVORITE = "ARG_IS_FAVORITE";
+    public static final String ARG_CITY_NAME = "ARG_CITY_NAME";
 
     public static ForecastsFragment newInstance(String cityCode, boolean isFavorite) {
         ForecastsFragment frag = new ForecastsFragment();
         Bundle bundle = new Bundle();
         bundle.putString(ARG_CITY_CODE, cityCode);
         bundle.putBoolean(ARG_IS_FAVORITE, isFavorite);
+        frag.setArguments(bundle);
+        return frag;
+    }
+
+    public static ForecastsFragment newClosestInstance(TabbedActivity activity) {
+        //query closest city (on UI thread but should be fast)
+        ArrayList<String> projection = new ArrayList<String>();
+        projection.add(CleverWeatherProvider.ROW_ID);
+        projection.add(CleverWeatherProvider.CITY_CODE_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
+        String colName = "dist";
+        projection.add(CitiesFragment.getDistanceProjection(activity, colName));
+        String orderBy = colName + " limit 1";
+
+        String cityCode = "bogus"; //in case cursor fails or returns no results
+        boolean isFavorite = false;
+        String cityName = null;
+        Cursor cursor = activity.getContentResolver().query(CleverWeatherProvider.CITY_URI, projection.toArray(new String[projection.size()]), null, null, orderBy);
+        if (cursor != null && cursor.getCount() == 1) {
+            cursor.moveToNext();
+            cityCode = cursor.getString(1);
+            cityName = cursor.getString(2);
+            isFavorite = cursor.getInt(3) > 0;
+            cursor.close();
+        }
+        //instantiate forecast fragment
+        ForecastsFragment frag = new ForecastsFragment();
+        Bundle bundle = new Bundle();
+        bundle.putString(ARG_CITY_CODE, cityCode);
+        bundle.putBoolean(ARG_IS_FAVORITE, isFavorite);
+        bundle.putString(ARG_CITY_NAME, cityName);
         frag.setArguments(bundle);
         return frag;
     }
@@ -85,6 +119,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
         mAdapter = new ForecastAdapter(getActivity(), R.layout.forecast_item, null, dataColumns, viewIds, 0);
         setListAdapter(mAdapter);
+        String title = getArguments().getString(ARG_CITY_NAME);
+        if (title != null && !title.isEmpty())
+            mAdapter.setTitleString(title);
         getLoaderManager().initLoader(0, null, this);
     }
 
@@ -191,6 +228,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         private Context mContext;
         private SimpleDateFormat mTimeStampFmt;
         private boolean mExpanded[];
+        private String mTitleString;
 
         public ForecastAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flags) {
             super(context, layout, c, from, to, flags);
@@ -203,7 +241,10 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
         @Override
         public Cursor swapCursor(Cursor c) {
-            mExpanded = new boolean[c.getCount()];
+            if (c != null)
+                mExpanded = new boolean[c.getCount()];
+            else
+                mExpanded = null;
             return super.swapCursor(c);
         }
 
@@ -233,8 +274,12 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         public void setViewText(TextView v, String text) {
             switch (v.getId()) {
                 case android.R.id.text1:
-                    if (text == null || text.length() == 0)
-                        text = mContext.getString(R.string.now);
+                    if (text == null || text.length() == 0) {
+                        if (mTitleString != null)
+                            text = mTitleString;
+                        else
+                            text = mContext.getString(R.string.now);
+                    }
                     break;
             }
             super.setViewText(v, text);
@@ -319,6 +364,14 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 return true;
             }
         };
+
+        public String getTitleString() {
+            return mTitleString;
+        }
+
+        public void setTitleString(String mTitleString) {
+            this.mTitleString = mTitleString;
+        }
     }
 
     private static class ForecastsLoader extends CursorLoader {

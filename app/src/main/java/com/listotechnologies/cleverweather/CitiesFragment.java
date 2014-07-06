@@ -156,7 +156,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
             case Location:
                 String colName = "dist";
-                projection.add(getDistanceProjection(colName));
+                projection.add(getDistanceProjection((TabbedActivity)getActivity(), colName));
                 orderBy = colName + " limit 10";
                 break;
 
@@ -182,21 +182,18 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         m_adapter.swapCursor(null);
     }
 
-    String getDistanceProjection(String colName) {
+    public static String getDistanceProjection(TabbedActivity activity, String colName) {
         String selection = null;
         double lat = 49.68;
         double lon = -124.93;
-        Location location = getCurrentLocation();
-        if (location != null) {
-            lat = location.getLatitude();
-            lon = location.getLongitude();
+        if (activity != null) {
+            Location location = activity.getCurrentLocation();
+            if (location != null) {
+                lat = location.getLatitude();
+                lon = location.getLongitude();
+            }
         }
         return String.format("(((%.3f-longitude)*(%.3f-longitude))+((%.3f-latitude)*(%.3f-latitude))) as %s", lon, lon, lat, lat, colName);
-    }
-
-    Location getCurrentLocation() {
-        TabbedActivity activity = (TabbedActivity) getActivity();
-        return activity.getCurrentLocation();
     }
 
     @Override

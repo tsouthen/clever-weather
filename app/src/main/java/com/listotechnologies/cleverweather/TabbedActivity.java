@@ -116,8 +116,10 @@ public class TabbedActivity extends Activity
                 case 0:
                     return CitiesFragment.newLocationInstance();
                 case 1:
-                    return CitiesFragment.newFavoritesInstance();
+                    return ForecastsFragment.newClosestInstance(TabbedActivity.this);
                 case 2:
+                    return CitiesFragment.newFavoritesInstance();
+                case 3:
                     return ProvincesFragment.newInstance();
             }
             return null;
@@ -125,7 +127,7 @@ public class TabbedActivity extends Activity
 
         @Override
         public int getCount() {
-            return 3;
+            return 4;
         }
 
         @Override
@@ -135,8 +137,10 @@ public class TabbedActivity extends Activity
                 case 0:
                     return getString(R.string.title_location).toUpperCase(l);
                 case 1:
-                    return getString(R.string.title_favorites).toUpperCase(l);
+                    return "Location".toUpperCase();
                 case 2:
+                    return getString(R.string.title_favorites).toUpperCase(l);
+                case 3:
                     return getString(R.string.title_browse).toUpperCase(l);
             }
             return null;
