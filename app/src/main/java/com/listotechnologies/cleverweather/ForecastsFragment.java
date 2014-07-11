@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -29,11 +30,13 @@ import java.util.Locale;
 public class ForecastsFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
     private ForecastAdapter mAdapter;
     private SwipeRefreshLayout mSwipeRefresh;
+    private MenuItem mIsFavorite = null;
 
     private static final String FORCE_REFRESH = "ForceRefresh";
-    public static final String ARG_CITY_CODE = "ARG_CITY_CODE";
-    public static final String ARG_IS_FAVORITE = "ARG_IS_FAVORITE";
-    public static final String ARG_CITY_NAME = "ARG_CITY_NAME";
+    private static final String ARG_CITY_CODE = "ARG_CITY_CODE";
+    private static final String ARG_IS_FAVORITE = "ARG_IS_FAVORITE";
+    private static final String ARG_CITY_NAME = "ARG_CITY_NAME";
+    private static final String ARG_BY_LOCATION = "ARG_BY_LOCATION";
 
     public static ForecastsFragment newInstance(String cityCode, boolean isFavorite) {
         ForecastsFragment frag = new ForecastsFragment();
@@ -44,34 +47,10 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         return frag;
     }
 
-    public static ForecastsFragment newClosestInstance(TabbedActivity activity) {
-        //query closest city (on UI thread but should be fast)
-        ArrayList<String> projection = new ArrayList<String>();
-        projection.add(CleverWeatherProvider.ROW_ID);
-        projection.add(CleverWeatherProvider.CITY_CODE_COLUMN);
-        projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
-        projection.add(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
-        String colName = "dist";
-        projection.add(CitiesFragment.getDistanceProjection(activity, colName));
-        String orderBy = colName + " limit 1";
-
-        String cityCode = "bogus"; //in case cursor fails or returns no results
-        boolean isFavorite = false;
-        String cityName = null;
-        Cursor cursor = activity.getContentResolver().query(CleverWeatherProvider.CITY_URI, projection.toArray(new String[projection.size()]), null, null, orderBy);
-        if (cursor != null && cursor.getCount() == 1) {
-            cursor.moveToNext();
-            cityCode = cursor.getString(1);
-            cityName = cursor.getString(2);
-            isFavorite = cursor.getInt(3) > 0;
-            cursor.close();
-        }
-        //instantiate forecast fragment
+    public static ForecastsFragment newClosestInstance() {
         ForecastsFragment frag = new ForecastsFragment();
         Bundle bundle = new Bundle();
-        bundle.putString(ARG_CITY_CODE, cityCode);
-        bundle.putBoolean(ARG_IS_FAVORITE, isFavorite);
-        bundle.putString(ARG_CITY_NAME, cityName);
+        bundle.putBoolean(ARG_BY_LOCATION, true);
         frag.setArguments(bundle);
         return frag;
     }
@@ -138,20 +117,38 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN,
         };
 
+        boolean forceRefresh = bundle != null && bundle.getBoolean(FORCE_REFRESH);
+
         String cityCode = "bogus";
         Bundle args = getArguments();
         if (args != null)
             cityCode = args.getString(ARG_CITY_CODE);
         String where = CleverWeatherProvider.FORECAST_CITYCODE_COLUMN + "=?";
-        boolean forceRefresh = bundle != null && bundle.getBoolean(FORCE_REFRESH);
+
         //TODO: only show this when we're actually refreshing from internet
         mSwipeRefresh.setRefreshing(true);
+
+        if (args.getBoolean(ARG_BY_LOCATION, false))
+            return new NearestCityForecastsLoader(getActivity(), CleverWeatherProvider.FORECAST_URI, projection, where, new String[] { cityCode }, orderBy, forceRefresh);
+
         return new ForecastsLoader(getActivity(), CleverWeatherProvider.FORECAST_URI, projection, where, new String[] { cityCode }, orderBy, forceRefresh);
     }
 
     @Override
     public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
         mSwipeRefresh.setRefreshing(false);
+
+        if (cursorLoader instanceof NearestCityForecastsLoader) {
+            NearestCityForecastsLoader loader = (NearestCityForecastsLoader) cursorLoader;
+            Bundle bundle = getArguments();
+            bundle.putBoolean(ARG_IS_FAVORITE, loader.getIsFavorite());
+            bundle.putString(ARG_CITY_NAME, loader.getCityName());
+            bundle.putString(ARG_CITY_CODE, loader.getCityCode());
+            mAdapter.setTitleString(loader.getCityName());
+            if (mIsFavorite != null)
+                mIsFavorite.setChecked(loader.getIsFavorite());
+        }
+
         mAdapter.changeCursor(cursor);
     }
 
@@ -164,9 +161,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.forecasts, menu);
-        MenuItem isFav = menu.findItem(R.id.menu_is_favorite);
-        if (isFav != null)
-            isFav.setChecked(getArguments().getBoolean(ARG_IS_FAVORITE));
+        mIsFavorite = menu.findItem(R.id.menu_is_favorite);
+        if (mIsFavorite != null)
+            mIsFavorite.setChecked(getArguments().getBoolean(ARG_IS_FAVORITE));
         super.onCreateOptionsMenu(menu, inflater);
     }
 
@@ -397,6 +394,50 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 mForceRefresh = false;
             }
             return super.loadInBackground();
+        }
+    }
+
+    private static class NearestCityForecastsLoader extends ForecastsLoader {
+        private String mCityCode = null;
+        private String mCityName = null;
+        private boolean mIsFavorite = false;
+
+        public NearestCityForecastsLoader (Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder, boolean forceRefresh) {
+            super(context, uri, projection, selection, selectionArgs, sortOrder, forceRefresh);
+        }
+
+        @Override
+        public Cursor loadInBackground() {
+            //get current location
+            Location location = TabbedActivity.getLocationGetter(getContext()).getLocation();
+
+            mCityCode = "bogus";
+            mCityName = "Unknown";
+            mIsFavorite = false;
+
+            Cursor cursor = CleverWeatherProviderExtended.queryClosestCity(getContext().getContentResolver(), location);
+            if (cursor != null) {
+                if (cursor.moveToNext()) {
+                    mCityName = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEEN_COLUMN));
+                    mIsFavorite = cursor.getInt(cursor.getColumnIndex(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN)) != 0;
+                    mCityCode = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_CODE_COLUMN));
+                }
+                cursor.close();
+            }
+            setSelectionArgs(new String [] {mCityCode});
+            return super.loadInBackground();
+        }
+
+        public boolean getIsFavorite() {
+            return mIsFavorite;
+        }
+
+        public String getCityCode() {
+            return mCityCode;
+        }
+
+        public String getCityName() {
+            return mCityName;
         }
     }
 }

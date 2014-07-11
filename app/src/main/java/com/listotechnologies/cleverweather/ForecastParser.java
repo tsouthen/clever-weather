@@ -90,6 +90,12 @@ public class ForecastParser {
                     Element forecast = (Element) forecastList.item(ii);
                     String name = getFirstElementByTagName(forecast, "period").getAttribute("textForecastName");
                     String summary = getSummary(forecast);
+                    if (summary != null) {
+                        if (summary.contains("\r"))
+                            summary = summary.replace("\r", "");
+                        if (summary.contains("\n"))
+                            summary = summary.replace("\n", " ");
+                    }
 
                     Element abbrevForecast = getFirstElementByTagName(forecast, "abbreviatedForecast");
                     int iconCode = Integer.parseInt(getText(getFirstElementByTagName(abbrevForecast, "iconCode")));
@@ -135,6 +141,7 @@ public class ForecastParser {
             builder.append(" ");
         if (uv != null && !uv.isEmpty())
             builder.append(uv);
+        
         if (builder.length() > 0)
             return builder.toString();
 

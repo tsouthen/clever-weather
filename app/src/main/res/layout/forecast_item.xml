@@ -31,10 +31,22 @@
         android:layout_marginTop="4dip"
         android:layout_alignParentRight="true"
         android:layout_below="@id/hightemp"
-        android:text="12°"
+        android:text="12%"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:singleLine="true"
         android:visibility="gone" />
+
+    <ImageView
+        android:id="@+id/umbrella"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="3dip"
+        android:layout_below="@id/hightemp"
+        android:layout_toLeftOf="@id/lowtemp"
+        android:layout_alignBottom="@id/lowtemp"
+        android:contentDescription="weather icon"
+        android:src="@drawable/umbrella"
+        android:visibility="gone"/>
 
     <TextView
         android:id="@android:id/text1"
@@ -61,6 +73,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@android:id/text1"
         android:layout_toRightOf="@id/icon"
+        android:layout_toLeftOf="@id/umbrella"
         android:text="Mix of sun and clouds, high of 25, low of 12. Cooler in higher areas overnight."
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:layout_marginRight="4dip" 

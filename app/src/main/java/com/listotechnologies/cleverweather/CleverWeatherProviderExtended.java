@@ -1,11 +1,13 @@
 package com.listotechnologies.cleverweather;
 
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
+import android.location.Location;
 import android.net.Uri;
 import android.util.Log;
 
@@ -104,6 +106,33 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
         return super.query(uri, projection, selection, selectionArgs, sortOrder);
     }
 
+    public static String getDistanceSquaredProjection(Location location, String colName) {
+        String selection = null;
+        double lat = 0.0, lon = 0.0;
+        if (location != null) {
+            lat = location.getLatitude();
+            lon = location.getLongitude();
+        }
+        return String.format("(((%.3f-%s)*(%.3f-%s))+((%.3f-%s)*(%.3f-%s))) as %s",
+                lon, CITY_LONGITUDE_COLUMN, lon, CITY_LONGITUDE_COLUMN,
+                lat, CITY_LATITUDE_COLUMN, lat, CITY_LATITUDE_COLUMN, colName);
+    }
+
+    public static Cursor queryClosestCity(ContentResolver contentResolver, Location location) {
+        ArrayList<String> projection = new ArrayList<String>();
+        projection.add(CleverWeatherProvider.ROW_ID);
+        projection.add(CleverWeatherProvider.CITY_CODE_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_NAMEFR_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_LATITUDE_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_LONGITUDE_COLUMN);
+        String colName = "dist";
+        projection.add(getDistanceSquaredProjection(location, colName));
+        String orderBy = colName + " limit 1";
+
+        return contentResolver.query(CleverWeatherProvider.CITY_URI, projection.toArray(new String[projection.size()]), null, null, orderBy);
+    }
     protected static class DbHelper2 extends DbHelper {
         private Context mContext;
 
