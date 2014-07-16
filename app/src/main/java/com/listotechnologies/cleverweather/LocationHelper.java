@@ -11,8 +11,6 @@ import android.os.Looper;
 public class LocationHelper {
     private Handler mHandler;
     private LocationManager mLocMgr;
-    private Boolean mGpsEnabled;
-    private Boolean mNetworkEnabled;
     private LocationResultListener mLocationResultListener;
     private boolean mNetworkOnly;
     private int mUpdateTimeout = 20;
@@ -62,29 +60,23 @@ public class LocationHelper {
 
         return mLocMgr;
     }
-    
-    private boolean isNetworkEnabled() {
-        if (mNetworkEnabled == null) {
-            try {
-                mNetworkEnabled = getLocationManager().isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-            } catch (SecurityException ex) { 
-                mNetworkEnabled = false;
-            }
+
+    public boolean isNetworkEnabled() {
+        try {
+            return getLocationManager().isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch (SecurityException ex) {
         }
-        return mNetworkEnabled;
+        return false;
     }
 
-    private boolean isGpsEnabled() {
-        if (mGpsEnabled == null) {
-            mGpsEnabled = false;
-            if (!mNetworkOnly) {
-                try {
-                    mGpsEnabled = getLocationManager().isProviderEnabled(LocationManager.GPS_PROVIDER);
-                } catch (SecurityException ex) {
-                }
+    public boolean isGpsEnabled() {
+        if (!mNetworkOnly) {
+            try {
+                return getLocationManager().isProviderEnabled(LocationManager.GPS_PROVIDER);
+            } catch (SecurityException ex) {
             }
         }
-        return mGpsEnabled;
+        return false;
     }
 
     public static boolean isLocationExpired(Location location, int locationExpiryMinutes) {
@@ -102,7 +94,7 @@ public class LocationHelper {
     public boolean getLocation(LocationResultListener result) {
         //see if last location is still valid
         Location location = getLastLocation();
-        if (!isLocationExpired(location)) {
+        if (location != null && !isLocationExpired(location)) {
             result.onGotLocation(location);
             return true;
         }

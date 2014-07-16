@@ -84,9 +84,9 @@ public class TabbedActivity extends Activity {
             Locale l = Locale.getDefault();
             switch (position) {
                 case 0:
-                    return getString(R.string.title_location).toUpperCase(l);
+                    return getString(R.string.title_nearby).toUpperCase(l);
                 case 1:
-                    return "Location".toUpperCase();
+                    return getString(R.string.title_location).toUpperCase(l);
                 case 2:
                     return getString(R.string.title_favorites).toUpperCase(l);
                 case 3:

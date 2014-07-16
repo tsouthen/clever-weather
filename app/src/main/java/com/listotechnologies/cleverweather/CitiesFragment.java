@@ -1,5 +1,6 @@
 package com.listotechnologies.cleverweather;
 
+import android.app.ActionBar;
 import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.ContentResolver;
@@ -25,6 +26,7 @@ import android.widget.AdapterView;
 import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +34,7 @@ import java.util.Arrays;
 public class CitiesFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
     private SimpleCursorAdapter m_adapter;
     private SwipeRefreshLayout mSwipeRefresh;
+    private View mEmptyView = null;
 
     public static final String ARG_PROVINCE = "ARG_PROVINCE";
     public static final String ARG_FAVORITES = "ARG_FAVORITES";
@@ -77,6 +80,8 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
             viewId = R.layout.fragment_cities_refresh;
 
         View view = inflater.inflate(viewId, container, false);
+        mEmptyView = view.findViewById(android.R.id.empty);
+        setErrorText();
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
         if (mSwipeRefresh != null) {
             mSwipeRefresh.setColorScheme(R.color.swipe_color_4, R.color.swipe_color_3, R.color.swipe_color_2, R.color.swipe_color_1);
@@ -90,6 +95,22 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         return view;
     }
 
+    private void setErrorText() {
+        int id = 0;
+        if (getArguments().containsKey(ARG_LOCATION)) {
+            id = R.string.location_error;
+        } else if (getArguments().containsKey(ARG_SEARCH)) {
+            id = R.string.search_error;
+        } else if (getArguments().containsKey(ARG_FAVORITES)) {
+            id = R.string.favorites_error;
+        }
+
+        if (id != 0 && mEmptyView != null) {
+            TextView errorText = (TextView) mEmptyView.findViewById(R.id.error_text);
+            if (errorText != null)
+                errorText.setText(id);
+        }
+    }
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -97,15 +118,18 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         registerForContextMenu(getListView());
 
         int resId = 0;
-        String[] dataColumns = { CleverWeatherProvider.CITY_NAMEEN_COLUMN };
-        int[] viewIds = { android.R.id.text1 };
+        String[] dataColumns = {CleverWeatherProvider.CITY_NAMEEN_COLUMN};
+        int[] viewIds = {android.R.id.text1};
 
         m_adapter = new SimpleCursorAdapter(getActivity(), android.R.layout.simple_list_item_1, null, dataColumns, viewIds, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+        if (mEmptyView != null)
+            getListView().setEmptyView(mEmptyView);
         setListAdapter(m_adapter);
         getLoaderManager().initLoader(0, null, this);
     }
 
-    private enum FilterMode { None, Location, Favorites, Search, Province };
+    private enum FilterMode {None, Location, Favorites, Search, Province};
+
     private static class Filter {
         public FilterMode Mode;
         public String Arguments;
@@ -148,11 +172,29 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         projection.add(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
 
         Filter filter = getFilterFromArguments();
-        if (filter.Mode == FilterMode.Location)
+        if (filter.Mode == FilterMode.Location) {
             return new ClosestCitiesLoader(getActivity(), CleverWeatherProvider.CITY_URI, projection.toArray(new String[projection.size()]), null, null, null);
+        }
 
         switch (filter.Mode) {
             case Favorites:
+                /*
+                String nonFavs = String.format("%s not in (select %s from %s where %s=1)",
+                        CleverWeatherProvider.FORECAST_CITYCODE_COLUMN,
+                        CleverWeatherProvider.CITY_CODE_COLUMN,
+                        CleverWeatherProvider.CITY_TABLE,
+                        CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
+                String recents = String.format("%s in (select %s from %s where %s is not null and %s group by %s order by %s desc limit 20)",
+                        CleverWeatherProvider.CITY_CODE_COLUMN,
+                        CleverWeatherProvider.FORECAST_CITYCODE_COLUMN,
+                        CleverWeatherProvider.FORECAST_TABLE,
+                        CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN,
+                        nonFavs,
+                        CleverWeatherProvider.FORECAST_CITYCODE_COLUMN,
+                        CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN);
+                where = CleverWeatherProvider.CITY_ISFAVORITE_COLUMN + "=1 or " + recents;
+                orderBy = CleverWeatherProvider.CITY_ISFAVORITE_COLUMN + " DESC," + CleverWeatherProvider.CITY_NAMEEN_COLUMN + " COLLATE UNICODE";
+                */
                 where = CleverWeatherProvider.CITY_ISFAVORITE_COLUMN + "=1";
                 break;
 
@@ -196,7 +238,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         if (v.getId() == android.R.id.list) {
-            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)menuInfo;
+            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
             Cursor cursor = (Cursor) m_adapter.getItem(info.position);
             boolean isFavorite = cursor.getInt(3) != 0;
             menu.setHeaderTitle(cursor.getString(2));
@@ -212,7 +254,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         if (item.getItemId() == Menu.FIRST || item.getItemId() == Menu.FIRST + 1) {
-            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
+            AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
             Cursor cursor = (Cursor) m_adapter.getItem(info.position);
             String cityCode = cursor.getString(1);
             boolean isFavorite = item.getItemId() != Menu.FIRST;
@@ -229,7 +271,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
                 ContentValues values = new ContentValues();
                 values.put(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN, isFavorite);
                 String where = CleverWeatherProvider.CITY_CODE_COLUMN + "=?";
-                contentResolver.update(CleverWeatherProvider.CITY_URI, values, where, new String[] {cityCode});
+                contentResolver.update(CleverWeatherProvider.CITY_URI, values, where, new String[]{cityCode});
                 return null;
             }
         };
@@ -244,17 +286,25 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         @Override
         public Cursor loadInBackground() {
             //get current location
-            Location location = TabbedActivity.getLocationGetter(getContext()).getLocation();
+            Location location = null;
+            LocationGetter locationGetter = TabbedActivity.getLocationGetter(getContext());
+            if (locationGetter.isLocationEnabled())
+                location = locationGetter.getLocation();
 
-            //add distance projection to projection
-            String colName = "dist";
-            String distProjection = CleverWeatherProviderExtended.getDistanceSquaredProjection(location, colName);
-            ArrayList<String> projection = new ArrayList<String>(Arrays.asList(getProjection()));
-            projection.add(distProjection);
-            setProjection(projection.toArray(new String[projection.size()]));
+            if (location != null) {
+                //add distance projection to projection
+                String colName = "dist";
+                String distProjection = CleverWeatherProviderExtended.getDistanceSquaredProjection(location, colName);
+                ArrayList<String> projection = new ArrayList<String>(Arrays.asList(getProjection()));
+                projection.add(distProjection);
+                setProjection(projection.toArray(new String[projection.size()]));
 
-            //set order by
-            setSortOrder(colName + " limit 10");
+                //set order by
+                setSortOrder(colName + " limit 10");
+            } else {
+                //set the where clause to return nothing
+                setSelection(CleverWeatherProvider.CITY_CODE_COLUMN + "='bogus'");
+            }
 
             return super.loadInBackground();
         }

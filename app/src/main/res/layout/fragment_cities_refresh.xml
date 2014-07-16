@@ -6,10 +6,18 @@
     android:layout_height="match_parent"
     tools:ignore="MergeRootFrame" >
 
-    <ListView
-        android:id="@android:id/list"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fastScrollEnabled="true" />
+        android:orientation="vertical" >
 
+        <include layout="@layout/empty_list"/>
+
+        <ListView
+            android:id="@android:id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fastScrollEnabled="true" />
+
+    </FrameLayout>
 </android.support.v4.widget.SwipeRefreshLayout>

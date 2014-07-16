@@ -8,7 +8,7 @@ public class LocationGetter {
     private final Context mContext;
     private Location mLocation = null;
     private final Object mGotLocationLock = new Object();
-    private LocationHelper mLocationResolver = null;
+    private LocationHelper mLocationHelper = null;
     private int mUpdateTimeout;
     private int mLocationExpiryMins;
 
@@ -38,13 +38,7 @@ public class LocationGetter {
                 new Thread() {
                     public void run() {
                         Looper.prepare();
-                        if (mLocationResolver == null) {
-                            mLocationResolver = new LocationHelper(mContext, true);
-                            mLocationResolver.setUpdateTimeout(mUpdateTimeout);
-                            mLocationResolver.setLocationExpiry(mLocationExpiryMins);
-                        }
-                        //locationResolver.prepare();
-                        mLocationResolver.getLocation(mLocationResult);
+                        getLocationHelper().getLocation(mLocationResult);
                         Looper.loop();
                     }
                 }.start();
@@ -55,5 +49,18 @@ public class LocationGetter {
             //e1.printStackTrace();
         }
         return mLocation;
+    }
+
+    public LocationHelper getLocationHelper() {
+        if (mLocationHelper == null) {
+            mLocationHelper = new LocationHelper(mContext, true);
+            mLocationHelper.setUpdateTimeout(mUpdateTimeout);
+            mLocationHelper.setLocationExpiry(mLocationExpiryMins);
+        }
+        return mLocationHelper;
+    }
+
+    public boolean isLocationEnabled() {
+        return getLocationHelper().isGpsEnabled() || getLocationHelper().isNetworkEnabled();
     }
 }

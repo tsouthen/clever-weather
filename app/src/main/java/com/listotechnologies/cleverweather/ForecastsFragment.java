@@ -1,5 +1,6 @@
 package com.listotechnologies.cleverweather;
 
+import android.app.ActionBar;
 import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.Context;
@@ -10,6 +11,8 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.text.Html;
+import android.text.Spanned;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -21,9 +24,7 @@ import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
@@ -61,9 +62,17 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         setHasOptionsMenu(true);
     }
 
+    private View mEmptyView = null;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_forecasts, container, false);
+        mEmptyView = view.findViewById(android.R.id.empty);
+        if (mEmptyView != null) {
+            TextView errorText = (TextView) mEmptyView.findViewById(R.id.error_text);
+            if (errorText != null)
+                errorText.setText(R.string.location_error);
+        }
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
         mSwipeRefresh.setColorScheme(R.color.swipe_color_4, R.color.swipe_color_3, R.color.swipe_color_2, R.color.swipe_color_1);
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -97,6 +106,8 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         };
 
         mAdapter = new ForecastAdapter(getActivity(), R.layout.forecast_item, null, dataColumns, viewIds, 0);
+        if (mEmptyView != null)
+            getListView().setEmptyView(mEmptyView);
         setListAdapter(mAdapter);
         String title = getArguments().getString(ARG_CITY_NAME);
         if (title != null && !title.isEmpty())
@@ -145,6 +156,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             bundle.putString(ARG_CITY_NAME, loader.getCityName());
             bundle.putString(ARG_CITY_CODE, loader.getCityCode());
             mAdapter.setTitleString(loader.getCityName());
+            mIsFavorite.setVisible(!mAdapter.isEmpty());
             if (mIsFavorite != null)
                 mIsFavorite.setChecked(loader.getIsFavorite());
         }
@@ -342,22 +354,31 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 return true;
             }
 
+            private String getLowTempHtml(String lowTemp) {
+                int color = mContext.getResources().getColor(R.color.low_temp_color);
+                String html = String.format("<font color=\"#%06X\">%s°</font>", color & 0x0FFFFFF, lowTemp);
+                return html;
+            }
+
+            private String getHighTempHtml(String highTemp) {
+                return String.format("<b>%s°</b>", highTemp);
+            }
+
             private boolean bindHighTemp(TextView view, Cursor cursor, int i) {
                 String highText = cursor.getString(i);
                 String lowText = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN));
                 String name = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_NAME_COLUMN));
-                String textVal = null;
+                Spanned textVal = null;
                 if (highText != null && lowText != null) {
-                    textVal = String.format("%s° | %s°", highText, lowText);
-                } else if (highText != null && name == null) {
-                    textVal = String.format("%s°", highText);
+                    textVal = Html.fromHtml(String.format("%s %s", getHighTempHtml(highText), getLowTempHtml(lowText)));
                 } else if (highText != null) {
-                    textVal = String.format("%s°", highText);
+                    textVal = Html.fromHtml(getHighTempHtml(highText));
                 } else if (lowText != null) {
-                    textVal = String.format("low %s°", lowText);
+                    textVal = Html.fromHtml(getLowTempHtml(lowText));
                 }
-                if (textVal != null)
+                if (textVal != null) {
                     ((TextView) view).setText(textVal);
+                }
                 return true;
             }
         };
@@ -408,21 +429,25 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
         @Override
         public Cursor loadInBackground() {
-            //get current location
-            Location location = TabbedActivity.getLocationGetter(getContext()).getLocation();
-
             mCityCode = "bogus";
             mCityName = "Unknown";
             mIsFavorite = false;
 
-            Cursor cursor = CleverWeatherProviderExtended.queryClosestCity(getContext().getContentResolver(), location);
-            if (cursor != null) {
-                if (cursor.moveToNext()) {
-                    mCityName = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEEN_COLUMN));
-                    mIsFavorite = cursor.getInt(cursor.getColumnIndex(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN)) != 0;
-                    mCityCode = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_CODE_COLUMN));
+            //get current location
+            LocationGetter locationGetter = TabbedActivity.getLocationGetter(getContext());
+            if (locationGetter.isLocationEnabled()) {
+                Location location = locationGetter.getLocation();
+                if (location != null) {
+                    Cursor cursor = CleverWeatherProviderExtended.queryClosestCity(getContext().getContentResolver(), location);
+                    if (cursor != null) {
+                        if (cursor.moveToNext()) {
+                            mCityName = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEEN_COLUMN));
+                            mIsFavorite = cursor.getInt(cursor.getColumnIndex(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN)) != 0;
+                            mCityCode = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_CODE_COLUMN));
+                        }
+                        cursor.close();
+                    }
                 }
-                cursor.close();
             }
             setSelectionArgs(new String [] {mCityCode});
             return super.loadInBackground();

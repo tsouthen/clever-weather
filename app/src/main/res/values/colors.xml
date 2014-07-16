@@ -4,4 +4,5 @@
     <color name="swipe_color_2">#ff8800</color>
     <color name="swipe_color_3">#ff4444</color>
     <color name="swipe_color_4">#cc0000</color>
+    <color name="low_temp_color">#777777</color>
 </resources>
