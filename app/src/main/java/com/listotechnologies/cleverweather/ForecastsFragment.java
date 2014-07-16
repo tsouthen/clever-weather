@@ -32,6 +32,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     private ForecastAdapter mAdapter;
     private SwipeRefreshLayout mSwipeRefresh;
     private MenuItem mIsFavorite = null;
+    private View mEmptyView = null;
 
     private static final String FORCE_REFRESH = "ForceRefresh";
     private static final String ARG_CITY_CODE = "ARG_CITY_CODE";
@@ -61,8 +62,6 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
     }
-
-    private View mEmptyView = null;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {

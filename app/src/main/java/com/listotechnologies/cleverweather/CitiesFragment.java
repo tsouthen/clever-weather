@@ -19,6 +19,7 @@ import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -74,6 +75,12 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     }
 
     @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         int viewId = R.layout.fragment_cities;
         if (getArguments().containsKey(ARG_LOCATION))
@@ -88,11 +95,15 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
             mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                 @Override
                 public void onRefresh() {
-                    getLoaderManager().restartLoader(0, null, CitiesFragment.this);
+                    restartLoader();
                 }
             });
         }
         return view;
+    }
+
+    private void restartLoader() {
+        getLoaderManager().restartLoader(0, null, this);
     }
 
     private void setErrorText() {
@@ -276,6 +287,22 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
             }
         };
         task.execute();
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        if (getArguments().containsKey(ARG_LOCATION))
+            inflater.inflate(R.menu.refresh, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_refresh) {
+            mSwipeRefresh.setRefreshing(true);
+            restartLoader();
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private static class ClosestCitiesLoader extends CursorLoader {
