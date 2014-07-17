@@ -8,7 +8,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -17,6 +19,7 @@ import java.util.TimeZone;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 public class ForecastParser {
     private static Element getFirstElementByTagName(Element element, String tagName) {
@@ -47,83 +50,74 @@ public class ForecastParser {
         return found ? buf.toString() : null;
     }
 
-    public static ArrayList<ContentValues> parseXml(Context context, String provinceAbbr, String cityCode) {
-        try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            String uri = "http://dd.weatheroffice.ec.gc.ca/citypage_weather/xml/" + provinceAbbr + "/" + cityCode + "_e.xml";
-            Document doc = builder.parse(uri);
-            return parseDoc(context, doc, cityCode);
-        } catch (Exception ex) {
-            Log.e("ForecastParser", "Exception", ex);
-            return null;
-        }
+    public static ArrayList<ContentValues> parseXml(Context context, String provinceAbbr, String cityCode)
+            throws ParserConfigurationException, IOException, SAXException, ParseException {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        String uri = "http://dd.weatheroffice.ec.gc.ca/citypage_weather/xml/" + provinceAbbr + "/" + cityCode + "_e.xml";
+        Document doc = builder.parse(uri);
+        return parseDoc(context, doc, cityCode);
     }
 
-    public static ArrayList<ContentValues> parseDoc(Context context, Document doc, String cityCode) {
-        try {
-            ArrayList<ContentValues> newValues = new ArrayList<ContentValues>();
+    public static ArrayList<ContentValues> parseDoc(Context context, Document doc, String cityCode) throws ParseException {
+        ArrayList<ContentValues> newValues = new ArrayList<ContentValues>();
 
-            SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMddHHmmss");
-            fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
+        SimpleDateFormat fmt = new SimpleDateFormat("yyyyMMddHHmmss");
+        fmt.setTimeZone(TimeZone.getTimeZone("GMT"));
 
-            //get current conditions
-            Element currentConds = getFirstElementByTagName(doc.getDocumentElement(), "currentConditions");
-            String tempStr = getText(getFirstElementByTagName(currentConds, "temperature"));
-            if (tempStr != null && !tempStr.isEmpty()) {
-                String summary = getText(getFirstElementByTagName(currentConds, "condition"));
-                Date currCondDate = getDate(fmt, currentConds);
-                String iconCodeStr = getText(getFirstElementByTagName(currentConds, "iconCode"));
-                Integer iconCode = null;
-                if (iconCodeStr != null && !iconCodeStr.isEmpty())
-                    iconCode = Integer.parseInt(iconCodeStr);
-                //TODO: allow for string temperature instead of int?
-                newValues.add(newForecastValues(cityCode, currCondDate, null, summary, iconCode, null, (int) Math.round(Double.parseDouble(tempStr))));
-            }
-
-            //get the forecasts
-            Element forecastGroup = getFirstElementByTagName(doc.getDocumentElement(), "forecastGroup");
-            Date forecastDate = getDate(fmt, forecastGroup);
-            NodeList forecastList = forecastGroup.getElementsByTagName("forecast");
-            if (forecastList != null) {
-                for (int ii=0; ii < forecastList.getLength(); ii++) {
-                    Element forecast = (Element) forecastList.item(ii);
-                    String name = getFirstElementByTagName(forecast, "period").getAttribute("textForecastName");
-                    String summary = getSummary(forecast);
-                    if (summary != null) {
-                        if (summary.contains("\r"))
-                            summary = summary.replace("\r", "");
-                        if (summary.contains("\n"))
-                            summary = summary.replace("\n", " ");
-                    }
-
-                    Element abbrevForecast = getFirstElementByTagName(forecast, "abbreviatedForecast");
-                    int iconCode = Integer.parseInt(getText(getFirstElementByTagName(abbrevForecast, "iconCode")));
-                    NodeList temps = getFirstElementByTagName(forecast, "temperatures").getElementsByTagName("temperature");
-                    Integer low = null;
-                    Integer high = null;
-                    if (temps != null) {
-                        for (int jj=0; jj < temps.getLength(); jj++) {
-                            Element temp = (Element) temps.item(jj);
-                            String tempClass = temp.getAttribute("class");
-                            int tempValue = Integer.parseInt(getText(temp));
-                            if ("low".equals(tempClass))
-                                low = tempValue;
-                            else if ("high".equals(tempClass))
-                                high = tempValue;
-                        }
-                    }
-                    newValues.add(newForecastValues(cityCode, forecastDate, name, summary, iconCode, low, high));
-                    //just save the forecast date once
-                    if (ii == 0)
-                        forecastDate = null;
-                }
-            }
-            return newValues;
-        } catch (Exception ex) {
-            Log.e("ForecastParser", "Exception", ex);
-            return null;
+        //get current conditions
+        Element currentConds = getFirstElementByTagName(doc.getDocumentElement(), "currentConditions");
+        String tempStr = getText(getFirstElementByTagName(currentConds, "temperature"));
+        if (tempStr != null && !tempStr.isEmpty()) {
+            String summary = getText(getFirstElementByTagName(currentConds, "condition"));
+            Date currCondDate = getDate(fmt, currentConds);
+            String iconCodeStr = getText(getFirstElementByTagName(currentConds, "iconCode"));
+            Integer iconCode = null;
+            if (iconCodeStr != null && !iconCodeStr.isEmpty())
+                iconCode = Integer.parseInt(iconCodeStr);
+            //TODO: allow for string temperature instead of int?
+            newValues.add(newForecastValues(cityCode, currCondDate, null, summary, iconCode, null, (int) Math.round(Double.parseDouble(tempStr))));
         }
+
+        //get the forecasts
+        Element forecastGroup = getFirstElementByTagName(doc.getDocumentElement(), "forecastGroup");
+        Date forecastDate = getDate(fmt, forecastGroup);
+        NodeList forecastList = forecastGroup.getElementsByTagName("forecast");
+        if (forecastList != null) {
+            for (int ii = 0; ii < forecastList.getLength(); ii++) {
+                Element forecast = (Element) forecastList.item(ii);
+                String name = getFirstElementByTagName(forecast, "period").getAttribute("textForecastName");
+                String summary = getSummary(forecast);
+                if (summary != null) {
+                    if (summary.contains("\r"))
+                        summary = summary.replace("\r", "");
+                    if (summary.contains("\n"))
+                        summary = summary.replace("\n", " ");
+                }
+
+                Element abbrevForecast = getFirstElementByTagName(forecast, "abbreviatedForecast");
+                int iconCode = Integer.parseInt(getText(getFirstElementByTagName(abbrevForecast, "iconCode")));
+                NodeList temps = getFirstElementByTagName(forecast, "temperatures").getElementsByTagName("temperature");
+                Integer low = null;
+                Integer high = null;
+                if (temps != null) {
+                    for (int jj = 0; jj < temps.getLength(); jj++) {
+                        Element temp = (Element) temps.item(jj);
+                        String tempClass = temp.getAttribute("class");
+                        int tempValue = Integer.parseInt(getText(temp));
+                        if ("low".equals(tempClass))
+                            low = tempValue;
+                        else if ("high".equals(tempClass))
+                            high = tempValue;
+                    }
+                }
+                newValues.add(newForecastValues(cityCode, forecastDate, name, summary, iconCode, low, high));
+                //just save the forecast date once
+                if (ii == 0)
+                    forecastDate = null;
+            }
+        }
+        return newValues;
     }
 
     private static String getSummary(Element forecast) {

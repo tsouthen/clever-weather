@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class CleverWeatherProviderExtended extends CleverWeatherProvider {
+    private static Exception sLastQueryException = null;
+
     @Override
     public boolean onCreate() {
         myOpenHelper = new DbHelper2(getContext(), DATABASE_NAME, null, DATABASE_VERSION);
@@ -49,8 +51,11 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
         }
         cursor.close();
     }
+
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+        sLastQueryException = null;
+
         if (uri == FORECAST_URI) {
             //see if the current forecast is out of date
             SQLiteDatabase db;
@@ -100,10 +105,15 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
                         }
                     }
                 }
-            } catch (SQLiteException ex) {
+            } catch (Exception ex) {
+                sLastQueryException = ex;
             }
         }
         return super.query(uri, projection, selection, selectionArgs, sortOrder);
+    }
+
+    public static Exception getLastQueryException() {
+        return sLastQueryException;
     }
 
     public static String getDistanceSquaredProjection(Location location, String colName) {

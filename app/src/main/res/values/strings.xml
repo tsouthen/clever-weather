@@ -47,8 +47,9 @@
     <string name="title_location">Location</string>
     <string name="title_nearby">Nearby</string>
     <string name="title_search_cities">Search Cities</string>
-    <string name="location_error">\nUnable to determine your location.\n\nIs Location enabled?</string>
-    <string name="favorites_error">\nNo favorite cities!\n\nLong press on a city to add make it a favorite, or select the Favorite menu when viewing a city forecast.</string>
-    <string name="search_error">\nSearch returned no results.</string>
+    <string name="location_error">Unable to determine your location.\n\nIs Location enabled?</string>
+    <string name="favorites_error">No favorite cities!\n\nLong press on a city to add make it a favorite, or select the Favorite menu when viewing a forecast.</string>
+    <string name="search_error">Search returned no results.</string>
+    <string name="forecast_error">Unable to get forecast, please try refreshing.</string>
 
 </resources>

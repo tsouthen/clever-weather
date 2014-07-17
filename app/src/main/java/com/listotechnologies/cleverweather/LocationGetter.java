@@ -53,7 +53,7 @@ public class LocationGetter {
 
     public LocationHelper getLocationHelper() {
         if (mLocationHelper == null) {
-            mLocationHelper = new LocationHelper(mContext, true);
+            mLocationHelper = new LocationHelper(mContext, false);
             mLocationHelper.setUpdateTimeout(mUpdateTimeout);
             mLocationHelper.setLocationExpiry(mLocationExpiryMins);
         }

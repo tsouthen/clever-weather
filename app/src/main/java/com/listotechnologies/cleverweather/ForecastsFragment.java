@@ -23,6 +23,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -65,13 +66,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_forecasts, container, false);
+        View view = inflater.inflate(R.layout.fragment_list_refresh, container, false);
         mEmptyView = view.findViewById(android.R.id.empty);
-        if (mEmptyView != null) {
-            TextView errorText = (TextView) mEmptyView.findViewById(R.id.error_text);
-            if (errorText != null)
-                errorText.setText(R.string.location_error);
-        }
+        setErrorText();
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
         mSwipeRefresh.setColorScheme(R.color.swipe_color_4, R.color.swipe_color_3, R.color.swipe_color_2, R.color.swipe_color_1);
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
@@ -81,6 +78,21 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             }
         });
         return view;
+    }
+
+    private void setErrorText() {
+        int id = 0;
+        if (getArguments().containsKey(ARG_BY_LOCATION)) {
+            id = R.string.location_error;
+        } else {
+            id = R.string.forecast_error;
+        }
+
+        if (id != 0 && mEmptyView != null) {
+            TextView errorText = (TextView) mEmptyView.findViewById(R.id.error_text);
+            if (errorText != null)
+                errorText.setText(id);
+        }
     }
 
     @Override
@@ -105,8 +117,6 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         };
 
         mAdapter = new ForecastAdapter(getActivity(), R.layout.forecast_item, null, dataColumns, viewIds, 0);
-        if (mEmptyView != null)
-            getListView().setEmptyView(mEmptyView);
         setListAdapter(mAdapter);
         String title = getArguments().getString(ARG_CITY_NAME);
         if (title != null && !title.isEmpty())
@@ -116,6 +126,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        setUnsetEmptyView(false);
         String orderBy = CleverWeatherProvider.ROW_ID;
         String[] projection = {
                 CleverWeatherProvider.ROW_ID,
@@ -146,6 +157,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
     @Override
     public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
+        setUnsetEmptyView(true);
         mSwipeRefresh.setRefreshing(false);
 
         if (cursorLoader instanceof NearestCityForecastsLoader) {
@@ -155,12 +167,16 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             bundle.putString(ARG_CITY_NAME, loader.getCityName());
             bundle.putString(ARG_CITY_CODE, loader.getCityCode());
             mAdapter.setTitleString(loader.getCityName());
-            mIsFavorite.setVisible(!mAdapter.isEmpty());
-            if (mIsFavorite != null)
+            if (mIsFavorite != null) {
                 mIsFavorite.setChecked(loader.getIsFavorite());
+                mIsFavorite.setVisible(!mAdapter.isEmpty());
+            }
         }
 
         mAdapter.changeCursor(cursor);
+        Exception ex = CleverWeatherProviderExtended.getLastQueryException();
+        if (ex != null)
+            Toast.makeText(getActivity(), ex.getLocalizedMessage(), Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -194,7 +210,21 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         return super.onOptionsItemSelected(item);
     }
 
+    private void setUnsetEmptyView(boolean set) {
+        if (mEmptyView == null)
+            return;
+
+        if (set) {
+            getListView().setEmptyView(mEmptyView);
+        } else {
+            if (mEmptyView != null)
+                mEmptyView.setVisibility(View.GONE);
+            getListView().setEmptyView(null);
+        }
+    }
+
     private void restartLoaderForceRefresh() {
+        setUnsetEmptyView(false);
         //close the cursor so it isn't notified of changes we're about to make
         mAdapter.getCursor().close();
         Bundle bundle = new Bundle();

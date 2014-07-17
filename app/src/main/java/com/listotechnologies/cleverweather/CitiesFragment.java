@@ -1,6 +1,5 @@
 package com.listotechnologies.cleverweather;
 
-import android.app.ActionBar;
 import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.ContentResolver;
@@ -82,9 +81,9 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        int viewId = R.layout.fragment_cities;
+        int viewId = R.layout.fragment_list;
         if (getArguments().containsKey(ARG_LOCATION))
-            viewId = R.layout.fragment_cities_refresh;
+            viewId = R.layout.fragment_list_refresh;
 
         View view = inflater.inflate(viewId, container, false);
         mEmptyView = view.findViewById(android.R.id.empty);
@@ -102,7 +101,21 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         return view;
     }
 
+    private void setUnsetEmptyView(boolean set) {
+        if (mEmptyView == null)
+            return;
+
+        if (set) {
+            getListView().setEmptyView(mEmptyView);
+        } else {
+            if (mEmptyView != null)
+                mEmptyView.setVisibility(View.GONE);
+            getListView().setEmptyView(null);
+        }
+    }
+
     private void restartLoader() {
+        setUnsetEmptyView(false);
         getLoaderManager().restartLoader(0, null, this);
     }
 
@@ -122,6 +135,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
                 errorText.setText(id);
         }
     }
+
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -133,8 +147,6 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         int[] viewIds = {android.R.id.text1};
 
         m_adapter = new SimpleCursorAdapter(getActivity(), android.R.layout.simple_list_item_1, null, dataColumns, viewIds, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
-        if (mEmptyView != null)
-            getListView().setEmptyView(mEmptyView);
         setListAdapter(m_adapter);
         getLoaderManager().initLoader(0, null, this);
     }
@@ -172,6 +184,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        setUnsetEmptyView(false);
         if (mSwipeRefresh != null)
             mSwipeRefresh.setRefreshing(true);
         String where = null;
@@ -226,6 +239,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         if (mSwipeRefresh != null)
             mSwipeRefresh.setRefreshing(false);
         m_adapter.swapCursor(cursor);
+        setUnsetEmptyView(true);
     }
 
     @Override

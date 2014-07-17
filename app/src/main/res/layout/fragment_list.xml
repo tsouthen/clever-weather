@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
 
-    <include layout="@layout/empty_list"/>
+    <include layout="@layout/no_items"/>
 
     <ListView
         android:id="@android:id/list"
