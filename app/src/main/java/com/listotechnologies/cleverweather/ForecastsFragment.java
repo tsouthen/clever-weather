@@ -7,12 +7,14 @@ import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.text.Html;
 import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -34,6 +36,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     private SwipeRefreshLayout mSwipeRefresh;
     private MenuItem mIsFavorite = null;
     private View mEmptyView = null;
+    private long mLastLoad;
 
     private static final String FORCE_REFRESH = "ForceRefresh";
     private static final String ARG_CITY_CODE = "ARG_CITY_CODE";
@@ -122,6 +125,20 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         if (title != null && !title.isEmpty())
             mAdapter.setTitleString(title);
         getLoaderManager().initLoader(0, null, this);
+        mLastLoad = 0;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (mLastLoad != 0) {
+            long now = new Date().getTime();
+            //if difference > half hour, initiate reload
+            if ((now - mLastLoad) > 30 * 60 * 1000) {
+                mLastLoad = 0;
+                restartLoaderForceRefresh();
+            }
+        }
     }
 
     @Override
@@ -177,6 +194,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         Exception ex = CleverWeatherProviderExtended.getLastQueryException();
         if (ex != null)
             Toast.makeText(getActivity(), ex.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+        mLastLoad = new Date().getTime();
     }
 
     @Override
@@ -293,11 +311,14 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             if (mExpanded != null && position >= 0 && position < mExpanded.length)
                 expanded = mExpanded[position];
 
+            setVisibilities(view, expanded);
+            return view;
+        }
+
+        private void setVisibilities(View view, boolean expanded) {
             setVisibility(view, android.R.id.text2, expanded ? View.VISIBLE : View.GONE);
             setVisibility(view, R.id.time_stamp, expanded ? View.VISIBLE : View.GONE);
             setVisibility(view, R.id.expand, expanded ? View.GONE : View.VISIBLE);
-
-            return view;
         }
 
         private void setVisibility(View parent, int viewId, int visibility) {
@@ -319,6 +340,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                             text = mContext.getString(R.string.now);
                     }
                     break;
+
             }
             super.setViewText(v, text);
         }
@@ -329,7 +351,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             if (value != null) {
                 try {
                     iconCode = Integer.parseInt(value);
-                    if (iconCode > 39 || iconCode < 0)
+                    if (iconCode == 44)
+                        iconCode = 23;
+                    else if (iconCode > 39 || iconCode < 0)
                         iconCode = 29;
                 } catch (NumberFormatException ex) {
                 }
@@ -360,6 +384,8 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                         return bindHighTemp((TextView) view, cursor, i);
                     case R.id.time_stamp:
                         return bindTimeStamp((TextView) view, cursor, i);
+                    case android.R.id.text2:
+                        return bindText2((TextView) view, cursor, i);
                 }
                 return false;
             }
@@ -378,7 +404,8 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                         text = String.format("conditions as of %s", asOf);
                     else
                         text = String.format("forecast as of %s", asOf);
-                    ((TextView) view).setText(text);
+
+                    view.setText(text);
                 }
                 return true;
             }
@@ -404,9 +431,25 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                     textVal = Html.fromHtml(getHighTempHtml(highText));
                 } else if (lowText != null) {
                     textVal = Html.fromHtml(getLowTempHtml(lowText));
+                } else {
+                    view.setText("");
                 }
                 if (textVal != null) {
-                    ((TextView) view).setText(textVal);
+                    view.setText(textVal);
+                }
+                return true;
+            }
+
+            private boolean bindText2(TextView view, Cursor cursor, int i) {
+                String text = cursor.getString(i);
+                if (text.contains("<a")) {
+                    view.setText(Html.fromHtml(text));
+                    view.setLinkTextColor(mContext.getResources().getColor(R.color.link_color));
+                    view.setMovementMethod(LinkMovementMethod.getInstance());
+                    setExpanded(cursor.getPosition(), true);
+                    setVisibilities((View) view.getParent(), true);
+                } else {
+                    view.setText(text);
                 }
                 return true;
             }

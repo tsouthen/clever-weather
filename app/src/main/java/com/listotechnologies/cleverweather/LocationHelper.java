@@ -1,6 +1,7 @@
 package com.listotechnologies.cleverweather;
 
 import android.content.Context;
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -16,6 +17,7 @@ public class LocationHelper {
     private int mUpdateTimeout = 20;
     private int mLocationExpiry = 0;
     private Context mContext;
+    private boolean mOngoing = false;
 
     public LocationHelper(Context context, boolean networkOnly) {
         mContext = context;
@@ -24,7 +26,8 @@ public class LocationHelper {
 
     private LocationListener mLocationListenerGps = new LocationListener() {
         public void onLocationChanged(Location location) {
-            cancelTimerAndRemoveListeners();
+            if (!mOngoing)
+                cancelTimerAndRemoveListeners();
             mLocationResultListener.onGotLocation(location);
         }
 
@@ -40,7 +43,8 @@ public class LocationHelper {
 
     private LocationListener mLocationListenerNetwork = new LocationListener() {
         public void onLocationChanged(Location location) {
-            cancelTimerAndRemoveListeners();
+            if (!mOngoing)
+                cancelTimerAndRemoveListeners();
             mLocationResultListener.onGotLocation(location);
         }
 
@@ -105,7 +109,7 @@ public class LocationHelper {
 
         // use LocationResult callback class to pass location value from LocationHelper to user code.
         mLocationResultListener = result;
-
+        mOngoing = false;
         Looper looper = Looper.myLooper();
         if (isGpsEnabled()) {
             mLocMgr.requestSingleUpdate(LocationManager.GPS_PROVIDER, mLocationListenerGps, looper);
@@ -123,6 +127,31 @@ public class LocationHelper {
                 mLocationResultListener.onGotLocation(getLastLocation());
             }
         }, mUpdateTimeout * 1000);
+        return true;
+    }
+
+    public boolean requestLocationUpdates(long minTime, float minDistance, LocationResultListener result) {
+        //see if last location is still valid
+        Location location = getLastLocation();
+        if (location != null && !isLocationExpired(location)) {
+            result.onGotLocation(location);
+            return true;
+        }
+
+        // don't start listeners if no provider is enabled
+        if (!isGpsEnabled() && !isNetworkEnabled())
+            return false;
+
+        // use LocationResult callback class to pass location value from LocationHelper to user code.
+        mLocationResultListener = result;
+        mOngoing = true;
+        Looper looper = Looper.myLooper();
+        mHandler = null;
+
+        if (isNetworkEnabled())
+            mLocMgr.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, minTime, minDistance, mLocationListenerNetwork, looper);
+        if (isGpsEnabled())
+            mLocMgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, mLocationListenerGps, looper);
         return true;
     }
 

@@ -51,5 +51,6 @@
     <string name="favorites_error">No favorite cities!\n\nLong press on a city to add make it a favorite, or select the Favorite menu when viewing a forecast.</string>
     <string name="search_error">Search returned no results.</string>
     <string name="forecast_error">Unable to get forecast, please try refreshing.</string>
+    <string name="unavailable">Unavailable</string>
 
 </resources>
