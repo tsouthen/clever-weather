@@ -6,4 +6,5 @@
     <color name="swipe_color_4">#cc0000</color>
     <color name="low_temp_color">#777777</color>
     <color name="link_color">#cc0000</color>
+    <color name="indicator_color">#ff8800</color>
 </resources>

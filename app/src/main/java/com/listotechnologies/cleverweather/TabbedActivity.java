@@ -7,10 +7,11 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v13.app.FragmentPagerAdapter;
-import android.support.v4.view.PagerTabStrip;
 import android.support.v4.view.ViewPager;
 import android.view.Menu;
 import android.widget.SearchView;
+
+import com.example.android.common.view.SlidingTabLayout;
 
 import java.util.Locale;
 
@@ -30,10 +31,13 @@ public class TabbedActivity extends Activity {
 
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
-        PagerTabStrip pts = (PagerTabStrip) mViewPager.findViewById(R.id.pager_tab_strip);
-        pts.setTabIndicatorColor(0xff8800);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         mViewPager.setCurrentItem(1);
+
+        //setup the tabs
+        SlidingTabLayout tabs = (SlidingTabLayout) findViewById(R.id.tabs);
+        tabs.setViewPager(mViewPager);
+        tabs.setSelectedIndicatorColors(getResources().getColor(R.color.indicator_color));
     }
 
     public static LocationGetter getLocationGetter(Context context) {

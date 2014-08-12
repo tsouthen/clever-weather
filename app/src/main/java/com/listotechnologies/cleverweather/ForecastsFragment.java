@@ -136,6 +136,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             //if difference > half hour, initiate reload
             if ((now - mLastLoad) > 30 * 60 * 1000) {
                 mLastLoad = 0;
+                Toast.makeText(getActivity(), "Refreshing Forecast", Toast.LENGTH_SHORT).show();
                 restartLoaderForceRefresh();
             }
         }
