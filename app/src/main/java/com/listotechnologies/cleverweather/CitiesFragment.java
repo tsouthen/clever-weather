@@ -94,7 +94,10 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
             mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                 @Override
                 public void onRefresh() {
-                    restartLoader();
+                    if (!mSwipeRefresh.isRefreshing())
+                        restartLoader();
+                    else
+                        mSwipeRefresh.setRefreshing(false);
                 }
             });
         }

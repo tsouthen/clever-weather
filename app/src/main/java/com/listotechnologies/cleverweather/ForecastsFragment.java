@@ -28,6 +28,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -77,7 +78,10 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                restartLoaderForceRefresh();
+                if (!mSwipeRefresh.isRefreshing())
+                    restartLoaderForceRefresh();
+                else
+                    mSwipeRefresh.setRefreshing(false);
             }
         });
         return view;
@@ -132,11 +136,11 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     public void onResume() {
         super.onResume();
         if (mLastLoad != 0) {
-            long now = new Date().getTime();
+            long nowTime = new Date().getTime();
             //if difference > half hour, initiate reload
-            if ((now - mLastLoad) > 30 * 60 * 1000) {
+            if ((nowTime - mLastLoad) > (30 * 60 * 1000)) {
                 mLastLoad = 0;
-                Toast.makeText(getActivity(), "Refreshing Forecast", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(getActivity(), "Refreshing Forecast", Toast.LENGTH_SHORT).show();
                 restartLoaderForceRefresh();
             }
         }
@@ -216,8 +220,10 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_refresh) {
-            mSwipeRefresh.setRefreshing(true);
-            restartLoaderForceRefresh();
+            if (!mSwipeRefresh.isRefreshing()) {
+                mSwipeRefresh.setRefreshing(true);
+                restartLoaderForceRefresh();
+            }
         } else if (item.getItemId() == R.id.menu_is_favorite) {
             //toggle check state
             boolean isFav = !item.isChecked();
@@ -360,9 +366,126 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 }
             }
 
-            v.setVisibility(View.VISIBLE);
-            int id = R.drawable.cbc_white_00 + iconCode;
-            v.setImageResource(id);
+            int id = 0;
+            switch (iconCode) {
+                case 0: //sun
+                    id = R.drawable.sun;
+                    break;
+
+                case 1: //little clouds
+                    id = R.drawable.sun_cloud;
+                    break;
+
+                case 4: //increasing cloud
+                    id = R.drawable.sun_cloud_increasing;
+                    break;
+                case 5: //decreasing cloud
+                    id = R.drawable.sun_cloud_decreasing;
+                    break;
+
+                case 2: //big cloud with sun
+                case 3: //sun behind big cloud
+                case 20: //decreasing cloud
+                case 22: //big cloud with sun
+                    id = R.drawable.cloud_sun;
+                    break;
+
+                case 6: //rain with sun behind cloud
+                    id = R.drawable.cloud_drizzle_sun_alt;
+                    break;
+
+                case 7: //rain and snow with sun behind cloud
+                case 8: //snow with sun behind cloud
+                    id = R.drawable.cloud_snow_sun_alt;
+                    break;
+
+                case 9: //cloud rain lightning
+                    id = R.drawable.cloud_lightning_sun;
+                    break;
+
+                case 10: //cloud
+                    id = R.drawable.cloud;
+                    break;
+
+                case 11:
+                case 28:
+                    id = R.drawable.cloud_drizzle_alt;
+                    break;
+
+                case 12:
+                    id = R.drawable.cloud_drizzle;
+                    break;
+
+                case 13:
+                    id = R.drawable.cloud_rain;
+                    break;
+
+                case 15:
+                case 16:
+                case 17:
+                case 18:
+                    id = R.drawable.cloud_snow_alt;
+                    break;
+
+                case 19:
+                    id = R.drawable.cloud_lightning;
+                    break;
+
+                case 21:
+                    id = R.drawable.cloud_moon;
+                    break;
+
+                case 23:
+                case 24:
+                    id = R.drawable.cloud_fog;
+                    break;
+
+                case 25:
+                    id = R.drawable.cloud_wind;
+                    break;
+
+                case 14: //freezing rain
+                case 26: //ice
+                case 27: //hail
+                    id = R.drawable.cloud_hail;
+                    break;
+
+                case 30:
+                    id = R.drawable.moon;
+                    break;
+
+                case 31:
+                case 32:
+                case 33:
+                case 34:
+                case 35:
+                    id = R.drawable.cloud_moon;
+                    break;
+
+                case 36:
+                    id = R.drawable.cloud_drizzle_moon_alt;
+                    break;
+
+                case 37:
+                case 38:
+                    id = R.drawable.cloud_snow_moon_alt;
+                    break;
+
+                case 39:
+                    id = R.drawable.cloud_lightning_moon;
+                    break;
+
+                default:
+                    iconCode = 29;
+                    break;
+            }
+
+            if (iconCode == 29) {
+                v.setVisibility(View.INVISIBLE);
+            } else {
+                v.setVisibility(View.VISIBLE);
+                v.setImageResource(id);
+            }
         }
 
         public boolean getExpanded(int position) {
