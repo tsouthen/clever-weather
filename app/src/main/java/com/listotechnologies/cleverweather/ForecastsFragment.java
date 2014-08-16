@@ -38,6 +38,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     private MenuItem mIsFavorite = null;
     private View mEmptyView = null;
     private long mLastLoad;
+    private boolean mRefreshing = false;
 
     private static final String FORCE_REFRESH = "ForceRefresh";
     private static final String ARG_CITY_CODE = "ARG_CITY_CODE";
@@ -78,10 +79,8 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                if (!mSwipeRefresh.isRefreshing())
+                if (!mRefreshing)
                     restartLoaderForceRefresh();
-                else
-                    mSwipeRefresh.setRefreshing(false);
             }
         });
         return view;
@@ -168,8 +167,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             cityCode = args.getString(ARG_CITY_CODE);
         String where = CleverWeatherProvider.FORECAST_CITYCODE_COLUMN + "=?";
 
-        //TODO: only show this when we're actually refreshing from internet
+        //TODO: only show this when we're actually refreshing from internet?
         mSwipeRefresh.setRefreshing(true);
+        mRefreshing = true;
 
         if (args.getBoolean(ARG_BY_LOCATION, false))
             return new NearestCityForecastsLoader(getActivity(), CleverWeatherProvider.FORECAST_URI, projection, where, new String[] { cityCode }, orderBy, forceRefresh);
@@ -181,6 +181,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
         setUnsetEmptyView(true);
         mSwipeRefresh.setRefreshing(false);
+        mRefreshing = false;
 
         if (cursorLoader instanceof NearestCityForecastsLoader) {
             NearestCityForecastsLoader loader = (NearestCityForecastsLoader) cursorLoader;
@@ -205,6 +206,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     @Override
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
         mSwipeRefresh.setRefreshing(false);
+        mRefreshing = false;
         mAdapter.changeCursor(null);
     }
 
@@ -220,7 +222,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_refresh) {
-            if (!mSwipeRefresh.isRefreshing()) {
+            if (!mRefreshing) {
                 mSwipeRefresh.setRefreshing(true);
                 restartLoaderForceRefresh();
             }
@@ -254,6 +256,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         mAdapter.getCursor().close();
         Bundle bundle = new Bundle();
         bundle.putBoolean(FORCE_REFRESH, true);
+        mRefreshing = true;
         getLoaderManager().restartLoader(0, bundle, this);
     }
 

@@ -27,6 +27,7 @@ import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +36,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     private SimpleCursorAdapter m_adapter;
     private SwipeRefreshLayout mSwipeRefresh;
     private View mEmptyView = null;
+    private boolean mRefreshing = false;
 
     public static final String ARG_PROVINCE = "ARG_PROVINCE";
     public static final String ARG_FAVORITES = "ARG_FAVORITES";
@@ -94,10 +96,8 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
             mSwipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
                 @Override
                 public void onRefresh() {
-                    if (!mSwipeRefresh.isRefreshing())
+                    if (!mRefreshing)
                         restartLoader();
-                    else
-                        mSwipeRefresh.setRefreshing(false);
                 }
             });
         }
@@ -118,6 +118,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     }
 
     private void restartLoader() {
+        mRefreshing = true;
         setUnsetEmptyView(false);
         getLoaderManager().restartLoader(0, null, this);
     }
@@ -190,6 +191,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         setUnsetEmptyView(false);
         if (mSwipeRefresh != null)
             mSwipeRefresh.setRefreshing(true);
+        mRefreshing = true;
         String where = null;
         String orderBy = CleverWeatherProvider.CITY_NAMEEN_COLUMN + " COLLATE UNICODE";
         ArrayList<String> projection = new ArrayList<String>();
@@ -241,6 +243,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
         if (mSwipeRefresh != null)
             mSwipeRefresh.setRefreshing(false);
+        mRefreshing = false;
         m_adapter.swapCursor(cursor);
         setUnsetEmptyView(true);
     }
@@ -249,6 +252,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
         if (mSwipeRefresh != null)
             mSwipeRefresh.setRefreshing(false);
+        mRefreshing = false;
         m_adapter.swapCursor(null);
     }
 
@@ -316,8 +320,10 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_refresh) {
-            mSwipeRefresh.setRefreshing(true);
-            restartLoader();
+            if (!mRefreshing) {
+                mSwipeRefresh.setRefreshing(true);
+                restartLoader();
+            }
         }
         return super.onOptionsItemSelected(item);
     }
