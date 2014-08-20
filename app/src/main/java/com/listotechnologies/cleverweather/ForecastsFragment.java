@@ -301,16 +301,20 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             setViewBinder(mViewBinder);
             mContext = context;
             mExpanded = null;
-            if (c != null)
+            if (c != null) {
                 mExpanded = new boolean[c.getCount()];
+                mExpanded[0] = true;
+            }
         }
 
         @Override
         public Cursor swapCursor(Cursor c) {
-            if (c != null)
+            if (c != null) {
                 mExpanded = new boolean[c.getCount()];
-            else
+                mExpanded[0] = true;
+            } else {
                 mExpanded = null;
+            }
             return super.swapCursor(c);
         }
 
@@ -361,10 +365,6 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             if (value != null) {
                 try {
                     iconCode = Integer.parseInt(value);
-                    if (iconCode == 44)
-                        iconCode = 23;
-                    else if (iconCode > 39 || iconCode < 0)
-                        iconCode = 29;
                 } catch (NumberFormatException ex) {
                 }
             }
@@ -382,13 +382,14 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 case 4: //increasing cloud
                     id = R.drawable.sun_cloud_increasing;
                     break;
+
                 case 5: //decreasing cloud
+                case 20: //decreasing cloud
                     id = R.drawable.sun_cloud_decreasing;
                     break;
 
                 case 2: //big cloud with sun
                 case 3: //sun behind big cloud
-                case 20: //decreasing cloud
                 case 22: //big cloud with sun
                     id = R.drawable.cloud_sun;
                     break;
@@ -440,6 +441,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
                 case 23:
                 case 24:
+                case 44:
                     id = R.drawable.cloud_fog;
                     break;
 
