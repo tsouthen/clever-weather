@@ -134,7 +134,11 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     @Override
     public void onResume() {
         super.onResume();
-        if (mLastLoad != 0) {
+        possiblyRefresh();
+    }
+
+    private void possiblyRefresh() {
+        if (!mRefreshing && mLastLoad != 0) {
             long nowTime = new Date().getTime();
             //if difference > half hour, initiate reload
             if ((nowTime - mLastLoad) > (30 * 60 * 1000)) {
@@ -435,10 +439,6 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                     id = R.drawable.cloud_lightning;
                     break;
 
-                case 21:
-                    id = R.drawable.cloud_moon;
-                    break;
-
                 case 23:
                 case 24:
                 case 44:
@@ -462,9 +462,16 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 case 31:
                 case 32:
                 case 33:
-                case 34:
-                case 35:
                     id = R.drawable.cloud_moon;
+                    break;
+
+                case 21:
+                case 34:
+                    id = R.drawable.cloud_moon_increasing;
+                    break;
+
+                case 35:
+                    id = R.drawable.cloud_moon_decreasing;
                     break;
 
                 case 36:

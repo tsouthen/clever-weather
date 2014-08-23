@@ -9,10 +9,12 @@ import android.os.Bundle;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.view.Menu;
+import android.view.ViewConfiguration;
 import android.widget.SearchView;
 
 import com.example.android.common.view.SlidingTabLayout;
 
+import java.lang.reflect.Field;
 import java.util.Locale;
 
 public class TabbedActivity extends Activity {
@@ -23,6 +25,7 @@ public class TabbedActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        ForceOverflowMenu.overrideHasPermanentMenuKey(this);
         setContentView(R.layout.activity_tabbed);
 
         // Create the adapter that will return a fragment for each of the three
@@ -59,23 +62,32 @@ public class TabbedActivity extends Activity {
 
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
+        private Fragment[] mFragments;
+
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
+            mFragments = new Fragment[getCount()];
         }
 
         @Override
         public Fragment getItem(int position) {
             switch (position) {
                 case 0:
-                    return CitiesFragment.newLocationInstance();
+                    mFragments[position] = CitiesFragment.newLocationInstance();
+                    break;
                 case 1:
-                    return ForecastsFragment.newClosestInstance();
+                    mFragments[position] = ForecastsFragment.newClosestInstance();
+                    break;
                 case 2:
-                    return CitiesFragment.newFavoritesInstance();
+                    mFragments[position] = CitiesFragment.newFavoritesInstance();
+                    break;
                 case 3:
-                    return ProvincesFragment.newInstance();
+                    mFragments[position] = ProvincesFragment.newInstance();
+                    break;
             }
-            return null;
+            if (position > 3)
+                return null;
+            return mFragments[position];
         }
 
         @Override
@@ -97,6 +109,41 @@ public class TabbedActivity extends Activity {
                     return getString(R.string.title_browse).toUpperCase(l);
             }
             return null;
+        }
+
+        public Fragment getFragmentAtPosition(int position) {
+            return mFragments[position];
+        }
+    }
+
+    public static class ForceOverflowMenu {
+        private boolean m_done = false;
+        private static ForceOverflowMenu s_instance = null;
+
+        private void possiblyOverrideHasPermanentMenuKey(Context context) {
+            if (m_done)
+                return;
+
+            m_done = true;
+
+            //Code from: http://stackoverflow.com/a/11438245/453479
+            try {
+                ViewConfiguration config = ViewConfiguration.get(context);
+                Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
+                if (menuKeyField != null) {
+                    menuKeyField.setAccessible(true);
+                    menuKeyField.setBoolean(config, false);
+                }
+            } catch (Exception ex) {
+                // Ignore
+            }
+        }
+
+        public static void overrideHasPermanentMenuKey(Context context) {
+            if (s_instance == null)
+                s_instance = new ForceOverflowMenu();
+
+            s_instance.possiblyOverrideHasPermanentMenuKey(context);
         }
     }
 }
