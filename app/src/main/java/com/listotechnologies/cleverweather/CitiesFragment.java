@@ -351,6 +351,8 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
                 //set order by
                 setSortOrder(colName + " limit 10");
+                //don't return HEF entries
+                setSelection(CleverWeatherProvider.CITY_PROVINCE_COLUMN + "<>'HEF'");
             } else {
                 //set the where clause to return nothing
                 setSelection(CleverWeatherProvider.CITY_CODE_COLUMN + "='bogus'");

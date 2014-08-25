@@ -12,6 +12,7 @@ import android.view.Menu;
 import android.view.ViewConfiguration;
 import android.widget.SearchView;
 
+import com.crashlytics.android.Crashlytics;
 import com.example.android.common.view.SlidingTabLayout;
 
 import java.lang.reflect.Field;
@@ -25,6 +26,7 @@ public class TabbedActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Crashlytics.start(this);
         ForceOverflowMenu.overrideHasPermanentMenuKey(this);
         setContentView(R.layout.activity_tabbed);
 
@@ -132,7 +134,8 @@ public class TabbedActivity extends Activity {
                 Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
                 if (menuKeyField != null) {
                     menuKeyField.setAccessible(true);
-                    menuKeyField.setBoolean(config, false);
+                    if (menuKeyField.getBoolean(config))
+                        menuKeyField.setBoolean(config, false);
                 }
             } catch (Exception ex) {
                 // Ignore

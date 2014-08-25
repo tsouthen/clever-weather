@@ -140,8 +140,9 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
         String colName = "dist";
         projection.add(getDistanceSquaredProjection(location, colName));
         String orderBy = colName + " limit 1";
+        String selection = CleverWeatherProvider.CITY_PROVINCE_COLUMN + "<>'HEF'";
 
-        return contentResolver.query(CleverWeatherProvider.CITY_URI, projection.toArray(new String[projection.size()]), null, null, orderBy);
+        return contentResolver.query(CleverWeatherProvider.CITY_URI, projection.toArray(new String[projection.size()]), selection, null, orderBy);
     }
     protected static class DbHelper2 extends DbHelper {
         private Context mContext;

@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
+import android.database.StaleDataException;
 import android.graphics.Color;
 import android.location.Location;
 import android.net.Uri;
@@ -307,7 +308,8 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             mExpanded = null;
             if (c != null) {
                 mExpanded = new boolean[c.getCount()];
-                mExpanded[0] = true;
+                if (mExpanded.length > 0)
+                    mExpanded[0] = true;
             }
         }
 
@@ -315,7 +317,8 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         public Cursor swapCursor(Cursor c) {
             if (c != null) {
                 mExpanded = new boolean[c.getCount()];
-                mExpanded[0] = true;
+                if (mExpanded.length > 0)
+                    mExpanded[0] = true;
             } else {
                 mExpanded = null;
             }
@@ -597,6 +600,19 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
         public void setTitleString(String mTitleString) {
             this.mTitleString = mTitleString;
+        }
+
+        @Override
+        public long getItemId(int position) {
+            //have a weird situation where during a refresh a touch event on the list can cause an
+            //exception. Trying to avoid it by catching the exceptions and returning a default value.
+            try {
+                return super.getItemId(position);
+            } catch (StaleDataException sdEx) {
+                return 0;
+            } catch (IllegalStateException isEx) {
+                return 0;
+            }
         }
     }
 
