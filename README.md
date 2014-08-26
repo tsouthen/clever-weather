@@ -9,6 +9,10 @@ Some tips:
 -Long press on a city to add (or remove) Favorites when viewing a list of cities
 -Check or un-check the Favorites menu item when viewing a forecast
 
-Credit to @adamwhitcroft for the excellent Climacons: <http://adamwhitcroft.com/climacons/>
+Download it from the [Google Play Store]
 
-Download it from the Google Play Store: <https://play.google.com/store/apps/details?id=com.listotechnologies.cleverweather>
+Credit to [@adamwhitcroft] for the excellent [Climacons]
+
+[@adamwhitcroft]:http://twitter.com/adamwhitcroft
+[Climacons]:http://adamwhitcroft.com/climacons/
+[Google Play Store]:https://play.google.com/store/apps/details?id=com.listotechnologies.cleverweather
