@@ -10,7 +10,7 @@
         android:layout_height="wrap_content"
         android:layout_marginRight="3dip"
         android:contentDescription="weather icon"
-        android:src="@drawable/cbc_white_22" />
+        android:src="@drawable/sun_cloud" />
 
     <TextView
         android:id="@+id/hightemp"

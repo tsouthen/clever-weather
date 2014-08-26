@@ -652,7 +652,7 @@ insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorit
 insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorite) values ('s0000653', 'Shediac', 'Shédiac', 'NB', '46.22', '64.53', '0');
 insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorite) values ('s0000654', 'Moncton', 'Moncton', 'NB', '46.12', '64.8', '0');
 insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorite) values ('s0000655', 'Hopewell', 'Hopewell', 'NB', '45.83', '64.72', '0');
-insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorite) values ('s0000656', 'Comox', 'Comox', 'BC', '49.68', '124.93', '1');
+insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorite) values ('s0000656', 'Comox', 'Comox', 'BC', '49.68', '124.93', '0');
 insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorite) values ('s0000657', 'Courtenay', 'Courtenay', 'BC', '49.68', '124.98', '0');
 insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorite) values ('s0000658', 'Brampton', 'Brampton', 'ON', '43.69', '79.76', '0');
 insert into city (Code, NameEn, NameFr, Province, Latitude, Longitude, IsFavorite) values ('s0000659', 'Kakabeka Falls', 'Kakabeka Falls', 'ON', '48.41', '89.62', '0');

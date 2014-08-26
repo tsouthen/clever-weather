@@ -42,10 +42,6 @@
                 android:value="com.listotechnologies.cleverweather.TabbedActivity" />
         </activity>
         <meta-data android:name="com.crashlytics.ApiKey" android:value="d613610efefddd8e3203f0167ced91d1ced252e3"/>
-        <!--
-        <meta-data android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version" />
-        -->
     </application>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.INTERNET"/>
