@@ -1,4 +1,4 @@
-clever-weather
+Clever Weather
 ==============
 
 Clever Weather is a simple and clean weather application that uses Environment Canada's current conditions and forecast data.
