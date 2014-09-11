@@ -327,7 +327,13 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            View view = super.getView(position, convertView, parent);
+            View view = null;
+            //not sure why this is sometimes happening in the wild
+            try {
+                view = super.getView(position, convertView, parent);
+            } catch (IllegalStateException isEx) {
+                return null;
+            }
             boolean expanded = false;
             if (mExpanded != null && position >= 0 && position < mExpanded.length)
                 expanded = mExpanded[position];

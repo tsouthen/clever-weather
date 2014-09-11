@@ -109,7 +109,14 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
                 sLastQueryException = ex;
             }
         }
-        return super.query(uri, projection, selection, selectionArgs, sortOrder);
+
+        try {
+            return super.query(uri, projection, selection, selectionArgs, sortOrder);
+        } catch (Exception ex) {
+            if (sLastQueryException != null)
+                sLastQueryException = ex;
+            return null;
+        }
     }
 
     public static Exception getLastQueryException() {
