@@ -27,21 +27,25 @@ import android.widget.CursorAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class CitiesFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
-    private SimpleCursorAdapter m_adapter;
+    private SimpleCursorAdapter mAdapter;
     private SwipeRefreshLayout mSwipeRefresh;
     private View mEmptyView = null;
     private boolean mRefreshing = false;
+    private OnCityClickListener mClickListener = null;
 
     public static final String ARG_PROVINCE = "ARG_PROVINCE";
     public static final String ARG_FAVORITES = "ARG_FAVORITES";
     public static final String ARG_LOCATION = "ARG_LOCATION";
     public static final String ARG_SEARCH = "ARG_SEARCH";
+
+    public interface OnCityClickListener {
+        void onCityClick(String cityCode, String cityName, boolean isFavorite);
+    }
 
     public static CitiesFragment newFavoritesInstance() {
         CitiesFragment frag = new CitiesFragment();
@@ -150,8 +154,8 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         String[] dataColumns = {CleverWeatherProvider.CITY_NAMEEN_COLUMN};
         int[] viewIds = {android.R.id.text1};
 
-        m_adapter = new SimpleCursorAdapter(getActivity(), android.R.layout.simple_list_item_1, null, dataColumns, viewIds, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
-        setListAdapter(m_adapter);
+        mAdapter = new SimpleCursorAdapter(getActivity(), android.R.layout.simple_list_item_1, null, dataColumns, viewIds, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+        setListAdapter(mAdapter);
         getLoaderManager().initLoader(0, null, this);
     }
 
@@ -244,7 +248,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         if (mSwipeRefresh != null)
             mSwipeRefresh.setRefreshing(false);
         mRefreshing = false;
-        m_adapter.swapCursor(cursor);
+        mAdapter.swapCursor(cursor);
         setUnsetEmptyView(true);
     }
 
@@ -253,25 +257,32 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         if (mSwipeRefresh != null)
             mSwipeRefresh.setRefreshing(false);
         mRefreshing = false;
-        m_adapter.swapCursor(null);
+        mAdapter.swapCursor(null);
+    }
+
+    public void setOnCityClickListener(OnCityClickListener listener) {
+        mClickListener = listener;
     }
 
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
-        Cursor cursor = (Cursor) m_adapter.getItem(position);
-        Intent intent = new Intent(getActivity(), ForecastsActivity.class);
-        intent.putExtra(ForecastsActivity.EXTRA_CITY_CODE, cursor.getString(1));
-        intent.putExtra(ForecastsActivity.EXTRA_CITY_NAME, cursor.getString(2));
+        Cursor cursor = (Cursor) mAdapter.getItem(position);
+        String cityCode = cursor.getString(1);
+        String cityName = cursor.getString(2);
         boolean isFavorite = cursor.getInt(3) != 0;
-        intent.putExtra(ForecastsActivity.EXTRA_IS_FAVORITE, isFavorite);
-        startActivity(intent);
+
+        if (mClickListener != null) {
+            mClickListener.onCityClick(cityCode, cityName, isFavorite);
+        } else {
+            ForecastsActivity.start(getActivity(), cityCode, cityName, isFavorite);
+        }
     }
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         if (v.getId() == android.R.id.list) {
             AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
-            Cursor cursor = (Cursor) m_adapter.getItem(info.position);
+            Cursor cursor = (Cursor) mAdapter.getItem(info.position);
             boolean isFavorite = cursor.getInt(3) != 0;
             menu.setHeaderTitle(cursor.getString(2));
             if (isFavorite)
@@ -287,7 +298,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     public boolean onContextItemSelected(MenuItem item) {
         if (item.getItemId() == Menu.FIRST || item.getItemId() == Menu.FIRST + 1) {
             AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-            Cursor cursor = (Cursor) m_adapter.getItem(info.position);
+            Cursor cursor = (Cursor) mAdapter.getItem(info.position);
             String cityCode = cursor.getString(1);
             boolean isFavorite = item.getItemId() != Menu.FIRST;
             setIsFavorite(getActivity().getContentResolver(), cityCode, isFavorite);

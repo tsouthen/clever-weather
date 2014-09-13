@@ -5,6 +5,7 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -75,21 +76,45 @@ public class TabbedActivity extends Activity {
         public Fragment getItem(int position) {
             switch (position) {
                 case 0:
-                    mFragments[position] = CitiesFragment.newLocationInstance();
+                    CitiesFragment locationInstance = CitiesFragment.newLocationInstance();
+                    setCityClickListener(locationInstance);
+                    mFragments[position] = locationInstance;
                     break;
                 case 1:
                     mFragments[position] = ForecastsFragment.newClosestInstance();
                     break;
                 case 2:
-                    mFragments[position] = CitiesFragment.newFavoritesInstance();
+                    CitiesFragment favsInstance = CitiesFragment.newFavoritesInstance();
+                    setCityClickListener(favsInstance);
+                    mFragments[position] = favsInstance;
                     break;
                 case 3:
-                    mFragments[position] = ProvincesFragment.newInstance();
+                    ProvincesFragment provincesInstance = ProvincesFragment.newInstance();
+                    setProvinceClickListener(provincesInstance);
+                    mFragments[position] = provincesInstance;
                     break;
             }
             if (position > 3)
                 return null;
             return mFragments[position];
+        }
+
+        private void setCityClickListener(CitiesFragment fragment) {
+            fragment.setOnCityClickListener(new CitiesFragment.OnCityClickListener() {
+                @Override
+                public void onCityClick(String cityCode, String cityName, boolean isFavorite) {
+                    ForecastsActivity.start(TabbedActivity.this, cityCode, cityName, isFavorite);
+                }
+            });
+        }
+
+        private void setProvinceClickListener(ProvincesFragment fragment) {
+            fragment.setOnProvinceClickListener(new ProvincesFragment.OnProvinceClickListener() {
+                @Override
+                public void onProvinceClick(ProvincesFragment.Province province) {
+                    ProvinceActivity.start(TabbedActivity.this, province);
+                }
+            });
         }
 
         @Override

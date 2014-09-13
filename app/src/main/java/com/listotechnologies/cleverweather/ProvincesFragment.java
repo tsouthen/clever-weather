@@ -11,6 +11,16 @@ import android.widget.ListView;
 import java.util.ArrayList;
 
 public class ProvincesFragment extends ListFragment {
+    private OnProvinceClickListener mClickListener = null;
+
+    public interface OnProvinceClickListener {
+        void onProvinceClick(Province province);
+    }
+
+    public void setOnProvinceClickListener(OnProvinceClickListener listener) {
+        mClickListener = listener;
+    }
+
     public static class Province {
         public final String Name;
         public final String Abbreviation;
@@ -50,11 +60,13 @@ public class ProvincesFragment extends ListFragment {
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
         super.onListItemClick(l, v, position, id);
-        Province prov = (Province) getListAdapter().getItem(position);
-        Intent intent = new Intent(getActivity(), ProvinceActivity.class);
-        intent.putExtra(ProvinceActivity.EXTRA_PROVINCE_ABBR, prov.Abbreviation);
-        intent.putExtra(ProvinceActivity.EXTRA_PROVINCE_NAME, prov.Name);
-        startActivity(intent);
+        Province province = (Province) getListAdapter().getItem(position);
+
+        if (mClickListener != null) {
+            mClickListener.onProvinceClick(province);
+        } else {
+            ProvinceActivity.start(getActivity(), province);
+        }
     }
 
     public static ProvincesFragment newInstance() {
