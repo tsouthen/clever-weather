@@ -1,5 +1,6 @@
 package com.listotechnologies.cleverweather;
 
+import android.app.Activity;
 import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.ContentResolver;
@@ -77,6 +78,19 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         bundle.putString(ARG_SEARCH, search);
         frag.setArguments(bundle);
         return frag;
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        if (activity instanceof OnCityClickListener)
+            mClickListener = (OnCityClickListener) activity;
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mClickListener = null;
     }
 
     @Override
@@ -260,12 +274,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         mAdapter.swapCursor(null);
     }
 
-    public void setOnCityClickListener(OnCityClickListener listener) {
-        mClickListener = listener;
-    }
-
-    @Override
-    public void onListItemClick(ListView l, View v, int position, long id) {
+    private void onCityClick(int position) {
         Cursor cursor = (Cursor) mAdapter.getItem(position);
         String cityCode = cursor.getString(1);
         String cityName = cursor.getString(2);
@@ -276,6 +285,11 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         } else {
             ForecastsActivity.start(getActivity(), cityCode, cityName, isFavorite);
         }
+    }
+
+    @Override
+    public void onListItemClick(ListView l, View v, int position, long id) {
+        onCityClick(position);
     }
 
     @Override

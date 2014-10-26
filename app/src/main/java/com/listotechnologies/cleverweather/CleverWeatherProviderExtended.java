@@ -1,12 +1,14 @@
 package com.listotechnologies.cleverweather;
 
+import android.app.SearchManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteQueryBuilder;
 import android.location.Location;
 import android.net.Uri;
 import android.util.Log;
@@ -18,7 +20,21 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class CleverWeatherProviderExtended extends CleverWeatherProvider {
+    public static String AUTHORITY = "com.listotechnologies.cleverweather.provider";
+    private static final int SEARCH_SUGGEST = 0;
     private static Exception sLastQueryException = null;
+    private static UriMatcher sSuggestMatcher = buildUriMatcher();
+    private static String sLastSuggestionQuery = null;
+    private static String sLastSuggestion = null;
+
+    private static UriMatcher buildUriMatcher() {
+        UriMatcher matcher =  new UriMatcher(UriMatcher.NO_MATCH);
+
+        matcher.addURI(AUTHORITY, SearchManager.SUGGEST_URI_PATH_QUERY, SEARCH_SUGGEST);
+        matcher.addURI(AUTHORITY, SearchManager.SUGGEST_URI_PATH_QUERY + "/*", SEARCH_SUGGEST);
+
+        return matcher;
+    }
 
     @Override
     public boolean onCreate() {
@@ -55,6 +71,9 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
         sLastQueryException = null;
+
+        if (sSuggestMatcher.match(uri) == SEARCH_SUGGEST)
+            return getSuggestions(uri);
 
         if (uri == FORECAST_URI) {
             //see if the current forecast is out of date
@@ -117,6 +136,60 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
                 sLastQueryException = ex;
             return null;
         }
+    }
+
+    private Cursor getSuggestions(Uri uri) {
+        try {
+            sLastSuggestionQuery = null;
+            sLastSuggestion = null;
+            String query = uri.getLastPathSegment();
+            if (query == null || query.length() == 0 || query.equals(SearchManager.SUGGEST_URI_PATH_QUERY))
+                return null;
+
+            query = query.trim();
+            SQLiteDatabase db = myOpenHelper.getReadableDatabase();
+            SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
+            queryBuilder.setTables(CITY_TABLE);
+
+            String[] projection = new String[] { ROW_ID,
+                    String.format("%s as %s", CITY_NAMEEN_COLUMN, SearchManager.SUGGEST_COLUMN_TEXT_1),
+                    String.format("%s as %s", CITY_PROVINCE_COLUMN, SearchManager.SUGGEST_COLUMN_TEXT_2),
+                    String.format("%s||'|'||%s||'|'||%s as %s", CITY_CODE_COLUMN, CITY_ISFAVORITE_COLUMN, CITY_NAMEEN_COLUMN, SearchManager.SUGGEST_COLUMN_INTENT_DATA),
+            };
+            String selection = String.format("%s LIKE '%s%%'", CITY_NAMEEN_COLUMN, query);
+            String sortOrder = String.format("%s,%s", CITY_NAMEEN_COLUMN, CITY_PROVINCE_COLUMN);
+            Cursor cursor = queryBuilder.query(db, projection, selection, null, null, null, sortOrder);
+            if (cursor.getCount() == 1) {
+                cursor.moveToFirst();
+                sLastSuggestionQuery = query;
+                sLastSuggestion = cursor.getString(3);
+                cursor.moveToPrevious();
+            }
+            return cursor;
+        } catch (Exception ex) {
+        }
+        return null;
+    }
+
+    public static ContentValues getSuggestionContent(String suggestionData) {
+        String[] params = suggestionData.split("\\|");
+        if (params != null && params.length == 3) {
+            ContentValues content = new ContentValues();
+            content.put(CITY_CODE_COLUMN, params[0]);
+            boolean isFav = params[1].equals("1");
+            content.put(CITY_ISFAVORITE_COLUMN, isFav);
+            content.put(CITY_NAMEEN_COLUMN, params[2]);
+            return content;
+        }
+        return null;
+    }
+
+    public static String getLastSuggestionQuery() {
+        return sLastSuggestionQuery;
+    }
+
+    public static String getLastSuggestion() {
+        return sLastSuggestion;
     }
 
     public static Exception getLastQueryException() {

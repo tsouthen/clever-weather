@@ -19,7 +19,7 @@ import com.example.android.common.view.SlidingTabLayout;
 import java.lang.reflect.Field;
 import java.util.Locale;
 
-public class TabbedActivity extends Activity {
+public class TabbedActivity extends Activity implements ProvincesFragment.OnProvinceClickListener, CitiesFragment.OnCityClickListener {
     SectionsPagerAdapter mSectionsPagerAdapter;
     ViewPager mViewPager;
     private static LocationGetter sLocationGetter = null;
@@ -27,7 +27,8 @@ public class TabbedActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Crashlytics.start(this);
+        if (!BuildConfig.DEBUG)
+            Crashlytics.start(this);
         ForceOverflowMenu.overrideHasPermanentMenuKey(this);
         setContentView(R.layout.activity_tabbed);
 
@@ -63,6 +64,21 @@ public class TabbedActivity extends Activity {
         return true;
     }
 
+    @Override
+    public void onProvinceClick(ProvincesFragment.Province province) {
+        ProvinceActivity.start(TabbedActivity.this, province);
+        //TODO: dynamically determine if we're in the two-pane layout or not
+        //CitiesFragment fragment = CitiesFragment.newProvinceInstance(province.Abbreviation);
+        //getFragmentManager().beginTransaction()
+        //        .replace(R.id.right_panel, fragment)
+        //        .commit();
+    }
+
+    @Override
+    public void onCityClick(String cityCode, String cityName, boolean isFavorite) {
+        ForecastsActivity.start(this, cityCode, cityName, isFavorite);
+    }
+
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
         private Fragment[] mFragments;
@@ -76,45 +92,22 @@ public class TabbedActivity extends Activity {
         public Fragment getItem(int position) {
             switch (position) {
                 case 0:
-                    CitiesFragment locationInstance = CitiesFragment.newLocationInstance();
-                    setCityClickListener(locationInstance);
-                    mFragments[position] = locationInstance;
+                    mFragments[position] = CitiesFragment.newLocationInstance();
                     break;
                 case 1:
                     mFragments[position] = ForecastsFragment.newClosestInstance();
                     break;
                 case 2:
-                    CitiesFragment favsInstance = CitiesFragment.newFavoritesInstance();
-                    setCityClickListener(favsInstance);
-                    mFragments[position] = favsInstance;
+                    mFragments[position] = CitiesFragment.newFavoritesInstance();
                     break;
                 case 3:
-                    ProvincesFragment provincesInstance = ProvincesFragment.newInstance();
-                    setProvinceClickListener(provincesInstance);
-                    mFragments[position] = provincesInstance;
+                    mFragments[position] = ProvincesFragment.newInstance();
+                    //mFragments[position] = new TwoPaneFragment();
                     break;
             }
             if (position > 3)
                 return null;
             return mFragments[position];
-        }
-
-        private void setCityClickListener(CitiesFragment fragment) {
-            fragment.setOnCityClickListener(new CitiesFragment.OnCityClickListener() {
-                @Override
-                public void onCityClick(String cityCode, String cityName, boolean isFavorite) {
-                    ForecastsActivity.start(TabbedActivity.this, cityCode, cityName, isFavorite);
-                }
-            });
-        }
-
-        private void setProvinceClickListener(ProvincesFragment fragment) {
-            fragment.setOnProvinceClickListener(new ProvincesFragment.OnProvinceClickListener() {
-                @Override
-                public void onProvinceClick(ProvincesFragment.Province province) {
-                    ProvinceActivity.start(TabbedActivity.this, province);
-                }
-            });
         }
 
         @Override
