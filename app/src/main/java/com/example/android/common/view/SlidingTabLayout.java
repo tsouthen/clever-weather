@@ -17,6 +17,7 @@
 package com.example.android.common.view;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.support.v4.view.PagerAdapter;
@@ -78,6 +79,9 @@ public class SlidingTabLayout extends HorizontalScrollView {
     private ViewPager.OnPageChangeListener mViewPagerPageChangeListener;
 
     private final SlidingTabStrip mTabStrip;
+
+    View mOldSelection = null; // new field indicating old selected item
+    ColorStateList mDefaultTextColor = null;
 
     public SlidingTabLayout(Context context) {
         this(context, null);
@@ -164,6 +168,10 @@ public class SlidingTabLayout extends HorizontalScrollView {
         }
     }
 
+    public void setDefaultTextColor(ColorStateList color) {
+        mDefaultTextColor = color;
+    }
+
     /**
      * Create a default view to be used for tabs. This is called if a custom tab view is not set via
      * {@link #setCustomTabView(int, int)}.
@@ -190,6 +198,9 @@ public class SlidingTabLayout extends HorizontalScrollView {
 
         int padding = (int) (TAB_VIEW_PADDING_DIPS * getResources().getDisplayMetrics().density);
         textView.setPadding(padding, padding, padding, padding);
+
+        if (mDefaultTextColor != null)
+            textView.setTextColor(mDefaultTextColor);
 
         return textView;
     }
@@ -233,6 +244,13 @@ public class SlidingTabLayout extends HorizontalScrollView {
         }
     }
 
+    // method to remove `selected` state from old one
+    private void removeOldSelection() {
+        if (mOldSelection != null) {
+            mOldSelection.setSelected(false);
+        }
+    }
+
     private void scrollToTab(int tabIndex, int positionOffset) {
         final int tabStripChildCount = mTabStrip.getChildCount();
         if (tabStripChildCount == 0 || tabIndex < 0 || tabIndex >= tabStripChildCount) {
@@ -241,6 +259,12 @@ public class SlidingTabLayout extends HorizontalScrollView {
 
         View selectedChild = mTabStrip.getChildAt(tabIndex);
         if (selectedChild != null) {
+            if (positionOffset == 0 && selectedChild != mOldSelection) {
+                selectedChild.setSelected(true);
+                removeOldSelection();
+                mOldSelection = selectedChild;
+            }
+
             int targetScrollX = selectedChild.getLeft() + positionOffset;
 
             if (tabIndex > 0 || positionOffset > 0) {

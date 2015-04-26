@@ -75,7 +75,7 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
         if (sSuggestMatcher.match(uri) == SEARCH_SUGGEST)
             return getSuggestions(uri);
 
-        if (uri == FORECAST_URI) {
+        if (uri.equals(FORECAST_URI)) {
             //see if the current forecast is out of date
             SQLiteDatabase db;
             try {

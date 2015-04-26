@@ -7,4 +7,9 @@
     <color name="low_temp_color">#777777</color>
     <color name="link_color">#cc0000</color>
     <color name="indicator_color">#ff8800</color>
+    <!--
+    <color name="indicator_color">#ffffff</color>
+    -->
+    <color name="selected_tab">#ffffff</color>
+    <color name="unselected_tab">#777777</color>
 </resources>
