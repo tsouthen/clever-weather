@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.text.Html;
 import android.text.Spanned;
+import android.text.SpannedString;
 import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -536,22 +537,21 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             }
 
             private boolean bindTimeStamp(TextView view, Cursor cursor, int i) {
+                String text = "";
                 long timeStamp = cursor.getLong(i);
                 if (timeStamp > 0) {
                     Date utc = new Date(timeStamp);
                     if (mLocale == null)
                         mLocale = mContext.getResources().getConfiguration().locale;
                     if (mTimeStampFmt == null)
-                        mTimeStampFmt = new SimpleDateFormat("MMM d, h::mm a", mLocale);
+                        mTimeStampFmt = new SimpleDateFormat("MMM d, h:mm a", mLocale);
                     String asOf = mTimeStampFmt.format(utc);
-                    String text;
                     if (cursor.getPosition() == 0)
                         text = String.format("conditions as of %s", asOf);
                     else
                         text = String.format("forecast as of %s", asOf);
-
-                    view.setText(text);
                 }
+                view.setText(text);
                 return true;
             }
 
@@ -577,11 +577,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 } else if (lowText != null) {
                     textVal = Html.fromHtml(getLowTempHtml(lowText));
                 } else {
-                    view.setText("");
+                    textVal = new SpannedString("");
                 }
-                if (textVal != null) {
-                    view.setText(textVal);
-                }
+                view.setText(textVal);
                 return true;
             }
 

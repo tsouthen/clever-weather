@@ -1,18 +1,22 @@
 package com.listotechnologies.cleverweather;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v13.app.ActivityCompat;
 import android.support.v13.app.FragmentPagerAdapter;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.view.Menu;
 import android.view.ViewConfiguration;
 import android.widget.SearchView;
 
-import com.crashlytics.android.Crashlytics;
 import com.example.android.common.view.SlidingTabLayout;
 
 import java.lang.reflect.Field;
@@ -26,8 +30,6 @@ public class TabbedActivity extends Activity implements ProvincesFragment.OnProv
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (!BuildConfig.DEBUG)
-            Crashlytics.start(this);
         ForceOverflowMenu.overrideHasPermanentMenuKey(this);
         setContentView(R.layout.activity_tabbed);
 
@@ -45,11 +47,27 @@ public class TabbedActivity extends Activity implements ProvincesFragment.OnProv
         //tabs.setDefaultTextColor(getResources().getColorStateList(R.color.tab_text));
         tabs.setViewPager(mViewPager);
         tabs.setSelectedIndicatorColors(getResources().getColor(R.color.indicator_color));
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == 1 && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            //restart the activity
+            finish();
+            startActivity(getIntent());
+        }
     }
 
     public static LocationGetter getLocationGetter(Context context) {
         if (sLocationGetter == null)
             sLocationGetter = new LocationGetter(context, 10, 15);
+        else
+            sLocationGetter.SetContext(context);
+
         return sLocationGetter;
     }
 

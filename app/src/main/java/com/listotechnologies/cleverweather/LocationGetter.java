@@ -1,11 +1,14 @@
 package com.listotechnologies.cleverweather;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Looper;
+import android.support.v4.content.ContextCompat;
 
 public class LocationGetter {
-    private final Context mContext;
+    private Context mContext;
     private Location mLocation = null;
     private final Object mGotLocationLock = new Object();
     private LocationHelper mLocationHelper = null;
@@ -30,6 +33,10 @@ public class LocationGetter {
         mContext = context;
         mUpdateTimeout = updateTimeoutSecs;
         mLocationExpiryMins = locationExpiryMins;
+    }
+
+    public void SetContext(Context context) {
+        mContext = context;
     }
 
     public synchronized Location getLocation() {
@@ -61,6 +68,9 @@ public class LocationGetter {
     }
 
     public boolean isLocationEnabled() {
+        if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            return false;
+
         return getLocationHelper().isGpsEnabled() || getLocationHelper().isNetworkEnabled();
     }
 }
