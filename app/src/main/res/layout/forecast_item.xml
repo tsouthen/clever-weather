@@ -2,7 +2,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/list_item"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent"
+    android:animateLayoutChanges="true" >
 
     <ImageView
         android:id="@+id/icon"
@@ -19,7 +20,7 @@
         android:layout_marginRight="8dip"
         android:layout_marginTop="4dip"
         android:layout_alignParentRight="true"
-        android:text="22° | 14°"
+        android:text="22°"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:singleLine="true" />
 
@@ -31,8 +32,9 @@
         android:layout_marginTop="4dip"
         android:layout_alignParentRight="true"
         android:layout_below="@id/hightemp"
-        android:text="12%"
-        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="12°"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="@android:color/darker_gray"
         android:singleLine="true"
         android:visibility="gone" />
 
@@ -46,7 +48,7 @@
         android:layout_alignBottom="@id/lowtemp"
         android:contentDescription="weather icon"
         android:src="@drawable/umbrella"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
     <TextView
         android:id="@android:id/text1"
@@ -76,7 +78,7 @@
         android:layout_toLeftOf="@id/umbrella"
         android:text="Mix of sun and clouds, high of 25, low of 12. Cooler in higher areas overnight."
         android:textAppearance="?android:attr/textAppearanceSmall"
-        android:layout_marginRight="4dip" 
+        android:layout_marginRight="4dip"
         android:paddingBottom="4dip"
         android:visibility="gone"
         />
@@ -87,7 +89,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@android:id/text1"
         android:layout_toRightOf="@id/icon"
-        android:text="&#x2026;"
+        android:text=""
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:layout_marginRight="4dip"
         android:paddingBottom="4dip"
@@ -102,6 +104,7 @@
         android:layout_toRightOf="@id/icon"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:textColor="@android:color/darker_gray"
+        android:textSize="12sp"
         android:layout_marginRight="4dip"
         android:paddingBottom="4dip"
         android:visibility="gone"
