@@ -1,7 +1,6 @@
 package com.listotechnologies.cleverweather;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.SearchManager;
@@ -13,6 +12,8 @@ import android.support.v13.app.ActivityCompat;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.ViewConfiguration;
 import android.widget.SearchView;
@@ -22,16 +23,20 @@ import com.example.android.common.view.SlidingTabLayout;
 import java.lang.reflect.Field;
 import java.util.Locale;
 
-public class TabbedActivity extends Activity implements ProvincesFragment.OnProvinceClickListener, CitiesFragment.OnCityClickListener {
+public class TabbedActivity extends BaseToolbarActivity implements ProvincesFragment.OnProvinceClickListener, CitiesFragment.OnCityClickListener {
     SectionsPagerAdapter mSectionsPagerAdapter;
     ViewPager mViewPager;
     private static LocationGetter sLocationGetter = null;
 
     @Override
+    protected int getContentId() {
+        return R.layout.activity_tabbed;
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ForceOverflowMenu.overrideHasPermanentMenuKey(this);
-        setContentView(R.layout.activity_tabbed);
 
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
@@ -71,14 +76,16 @@ public class TabbedActivity extends Activity implements ProvincesFragment.OnProv
         return sLocationGetter;
     }
 
-    @Override
+    //@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.tabbed, menu);
 
-        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
         SearchView searchView = (SearchView) menu.findItem(R.id.action_search).getActionView();
-        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
-
+        if (searchView != null) {
+            SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+            searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+            searchView.setIconifiedByDefault(false);
+        }
         return true;
     }
 

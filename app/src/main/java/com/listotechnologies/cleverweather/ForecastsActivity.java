@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 
-public class ForecastsActivity extends Activity {
+public class ForecastsActivity extends BaseToolbarActivity {
     private static final String EXTRA_CITY_CODE = "EXTRA_CITY_CODE";
     private static final String EXTRA_CITY_NAME = "EXTRA_CITY_NAME";
     private static final String EXTRA_IS_FAVORITE = "EXTRA_IS_FAVORITE";
@@ -23,7 +23,7 @@ public class ForecastsActivity extends Activity {
             String cityCode = getIntent().getStringExtra(EXTRA_CITY_CODE);
             boolean isFavorite = getIntent().getBooleanExtra(EXTRA_IS_FAVORITE, false);
             ForecastsFragment fragment = ForecastsFragment.newInstance(cityCode, isFavorite);
-            getFragmentManager().beginTransaction().add(android.R.id.content, fragment).commit();
+            getFragmentManager().beginTransaction().add(R.id.content, fragment).commit();
         }
     }
 

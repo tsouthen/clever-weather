@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 
-public class ProvinceActivity extends Activity {
+public class ProvinceActivity extends BaseToolbarActivity {
 
     private static final String EXTRA_PROVINCE_ABBR = "EXTRA_PROVINCE_ABBR";
     private static final String EXTRA_PROVINCE_NAME = "EXTRA_PROVINCE_NAME";
@@ -20,7 +20,7 @@ public class ProvinceActivity extends Activity {
 
         if (savedInstanceState == null) {
             String provAbbr = getIntent().getStringExtra(EXTRA_PROVINCE_ABBR);
-            getFragmentManager().beginTransaction().add(android.R.id.content, CitiesFragment.newProvinceInstance(provAbbr)).commit();
+            getFragmentManager().beginTransaction().add(R.id.content, CitiesFragment.newProvinceInstance(provAbbr)).commit();
         }
     }
 

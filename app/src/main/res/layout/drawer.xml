@@ -24,8 +24,8 @@
             android:paddingTop="8dp"
             >
             <ImageView
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
                 android:src="@drawable/clever_weather"/>
             <TextView
                 android:paddingTop="8dp"
@@ -43,93 +43,81 @@
         <LinearLayout
             android:id="@+id/location"
             android:layout_width="match_parent"
-            android:layout_height="48dp">
-            android:paddingTop="8dp"
+            android:layout_height="48dp"
+            android:paddingLeft="16dp">
             <ImageView
-                android:paddingLeft="16dp"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp"
-                android:layout_width="wrap_content"
+                android:layout_width="32dp"
                 android:layout_height="match_parent"
                 android:alpha="0.54"
                 android:src="@drawable/ic_map_marker"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:paddingLeft="36dp"
+                android:paddingLeft="24dp"
                 android:fontFamily="sans-serif-medium"
                 android:textSize="14sp"
                 android:textColor="#DD000000"
-                android:text="Location"
+                android:text="@string/title_location"
                 android:gravity="center_vertical" />
         </LinearLayout>
         <LinearLayout
             android:id="@+id/nearby"
             android:layout_width="match_parent"
-            android:layout_height="48dp">
-            android:paddingTop="8dp"
+            android:layout_height="48dp"
+            android:paddingLeft="16dp">
             <ImageView
-                android:paddingLeft="16dp"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp"
-                android:layout_width="wrap_content"
+                android:layout_width="32dp"
                 android:layout_height="match_parent"
                 android:alpha="0.54"
                 android:src="@drawable/ic_map_markers"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:paddingLeft="36dp"
+                android:paddingLeft="24dp"
                 android:fontFamily="sans-serif-medium"
                 android:textSize="14sp"
                 android:textColor="#DD000000"
-                android:text="Nearby"
+                android:text="@string/title_nearby"
                 android:gravity="center_vertical" />
         </LinearLayout>
         <LinearLayout
             android:id="@+id/favorites"
             android:layout_width="match_parent"
-            android:layout_height="48dp">
-            android:paddingTop="8dp"
+            android:layout_height="48dp"
+            android:paddingLeft="16dp">
             <ImageView
-                android:paddingLeft="16dp"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp"
-                android:layout_width="wrap_content"
+                android:layout_width="32dp"
                 android:layout_height="match_parent"
                 android:alpha="0.54"
-                android:src="@drawable/ic_star"/>
+                android:src="@drawable/ic_ai_important"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:paddingLeft="36dp"
+                android:paddingLeft="24dp"
                 android:fontFamily="sans-serif-medium"
                 android:textSize="14sp"
                 android:textColor="#DD000000"
-                android:text="Favourites"
+                android:text="@string/title_favorites"
                 android:gravity="center_vertical" />
         </LinearLayout>
         <LinearLayout
             android:id="@+id/browse"
             android:layout_width="match_parent"
-            android:layout_height="48dp">
-            android:paddingTop="8dp"
+            android:layout_height="48dp"
+            android:paddingLeft="16dp">
             <ImageView
-                android:paddingLeft="16dp"
-                android:paddingTop="12dp"
-                android:paddingBottom="12dp"
-                android:layout_width="wrap_content"
+                android:layout_width="32dp"
                 android:layout_height="match_parent"
                 android:alpha="0.54"
                 android:src="@drawable/ic_canada"/>
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:paddingLeft="36dp"
+                android:paddingLeft="24dp"
                 android:fontFamily="sans-serif-medium"
                 android:textSize="14sp"
                 android:textColor="#DD000000"
-                android:text="Browse"
+                android:text="@string/title_browse"
                 android:gravity="center_vertical" />
         </LinearLayout>
     </LinearLayout>

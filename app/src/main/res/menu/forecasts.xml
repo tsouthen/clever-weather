@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
         android:id="@+id/menu_is_favorite"
+        app:actionLayout="@layout/action_layout_styled_checkbox"
+        app:showAsAction="always"
         android:title="@string/favorite"
         android:checkable="true"
-        android:checked="true"
-        />
+        android:checked="true" />
     <item
         android:id="@+id/action_refresh"
-        android:icon="@drawable/ic_menu_refresh"
-        android:title="@string/refresh"
-        />
+        android:icon="@drawable/ic_ai_refresh"
+        app:showAsAction="always"
+        android:title="@string/refresh" />
 </menu>

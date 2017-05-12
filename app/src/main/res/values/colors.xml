@@ -12,4 +12,5 @@
     -->
     <color name="selected_tab">#ffffff</color>
     <color name="unselected_tab">#777777</color>
+    <color name="accent_material_light">#f5b800</color>
 </resources>

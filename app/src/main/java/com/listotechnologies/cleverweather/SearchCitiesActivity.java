@@ -7,7 +7,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 
-public class SearchCitiesActivity extends Activity {
+public class SearchCitiesActivity extends BaseToolbarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,7 +29,7 @@ public class SearchCitiesActivity extends Activity {
     }
 
     private void viewCities(String query) {
-        getFragmentManager().beginTransaction().add(android.R.id.content, CitiesFragment.newSearchInstance(query)).commit();
+        getFragmentManager().beginTransaction().add(R.id.content, CitiesFragment.newSearchInstance(query)).commit();
         setTitle(query);
     }
 
@@ -39,7 +39,7 @@ public class SearchCitiesActivity extends Activity {
             if (content != null) {
                 getFragmentManager()
                         .beginTransaction()
-                        .add(android.R.id.content, ForecastsFragment.newInstance(content.getAsString(CleverWeatherProviderExtended.CITY_CODE_COLUMN),
+                        .add(R.id.content, ForecastsFragment.newInstance(content.getAsString(CleverWeatherProviderExtended.CITY_CODE_COLUMN),
                                                                                  content.getAsBoolean(CleverWeatherProviderExtended.CITY_ISFAVORITE_COLUMN)))
                         .commit();
                 setTitle(content.getAsString(CleverWeatherProviderExtended.CITY_NAMEEN_COLUMN));

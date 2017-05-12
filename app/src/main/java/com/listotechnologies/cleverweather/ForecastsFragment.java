@@ -1,6 +1,5 @@
 package com.listotechnologies.cleverweather;
 
-import android.app.ActionBar;
 import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.Context;
@@ -8,7 +7,6 @@ import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
 import android.database.StaleDataException;
-import android.graphics.Color;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
@@ -23,6 +21,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
@@ -30,14 +29,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
 public class ForecastsFragment extends ListFragment implements LoaderManager.LoaderCallbacks<Cursor> {
     private ForecastAdapter mAdapter;
     private SwipeRefreshLayout mSwipeRefresh;
-    private MenuItem mIsFavorite = null;
+    private MenuItem mFavoriteMenu = null;
     private View mEmptyView = null;
     private long mLastLoad;
     private boolean mRefreshing = false;
@@ -189,24 +187,32 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         mSwipeRefresh.setRefreshing(false);
         mRefreshing = false;
 
-        if (cursorLoader instanceof NearestCityForecastsLoader) {
-            NearestCityForecastsLoader loader = (NearestCityForecastsLoader) cursorLoader;
-            Bundle bundle = getArguments();
-            bundle.putBoolean(ARG_IS_FAVORITE, loader.getIsFavorite());
-            bundle.putString(ARG_CITY_NAME, loader.getCityName());
-            bundle.putString(ARG_CITY_CODE, loader.getCityCode());
-            mAdapter.setTitleString(loader.getCityName());
-            if (mIsFavorite != null) {
-                mIsFavorite.setChecked(loader.getIsFavorite());
-                mIsFavorite.setVisible(!mAdapter.isEmpty());
-            }
-        }
-
         mAdapter.changeCursor(cursor);
         Exception ex = CleverWeatherProviderExtended.getLastQueryException();
         if (ex != null)
             Toast.makeText(getActivity(), ex.getLocalizedMessage(), Toast.LENGTH_LONG).show();
         mLastLoad = new Date().getTime();
+
+        if (cursorLoader instanceof NearestCityForecastsLoader) {
+            NearestCityForecastsLoader loader = (NearestCityForecastsLoader) cursorLoader;
+            boolean isFav = loader.getIsFavorite();
+            Bundle bundle = getArguments();
+            bundle.putBoolean(ARG_IS_FAVORITE, isFav);
+            bundle.putString(ARG_CITY_NAME, loader.getCityName());
+            bundle.putString(ARG_CITY_CODE, loader.getCityCode());
+
+            if (getArguments().getString(ARG_CITY_NAME) != loader.getCityName())
+                setArguments(bundle);
+
+            if (isFav && !getArguments().getBoolean(ARG_IS_FAVORITE)) {
+                setArguments(bundle);
+            }
+            mAdapter.setTitleString(loader.getCityName());
+            if (mFavoriteMenu != null) {
+                setActionBarCheckboxChecked(mFavoriteMenu, isFav);
+                mFavoriteMenu.setVisible(!mAdapter.isEmpty());
+            }
+        }
     }
 
     @Override
@@ -218,11 +224,34 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        boolean checked = getArguments().getBoolean(ARG_IS_FAVORITE);
         inflater.inflate(R.menu.forecasts, menu);
-        mIsFavorite = menu.findItem(R.id.menu_is_favorite);
-        if (mIsFavorite != null)
-            mIsFavorite.setChecked(getArguments().getBoolean(ARG_IS_FAVORITE));
+        mFavoriteMenu = menu.findItem(R.id.menu_is_favorite);
+        mFavoriteMenu.setChecked(checked);
+        CheckBox favoriteView = (CheckBox) mFavoriteMenu.getActionView();
+        if (favoriteView != null) {
+            favoriteView.setButtonDrawable(R.drawable.favorite_selector);
+            favoriteView.setChecked(checked);
+            favoriteView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    onOptionsItemSelected(mFavoriteMenu);
+                }
+            });
+        }
         super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    private void setActionBarCheckboxChecked(MenuItem it, boolean checked) {
+        if (it == null)
+            return;
+
+        it.setChecked(checked);
+
+        CheckBox cb = (CheckBox)it.getActionView();
+        if (cb != null)
+            cb.setChecked(checked);
+        getArguments().putBoolean(ARG_IS_FAVORITE, checked);
     }
 
     @Override
@@ -235,7 +264,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         } else if (item.getItemId() == R.id.menu_is_favorite) {
             //toggle check state
             boolean isFav = !item.isChecked();
-            item.setChecked(isFav);
+            setActionBarCheckboxChecked(item, isFav);
             getArguments().putBoolean(ARG_IS_FAVORITE, isFav);
             //update City database in background thread
             setIsFavorite(isFav);
@@ -250,8 +279,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         if (set) {
             getListView().setEmptyView(mEmptyView);
         } else {
-            if (mEmptyView != null)
-                mEmptyView.setVisibility(View.GONE);
+            mEmptyView.setVisibility(View.GONE);
             getListView().setEmptyView(null);
         }
     }
@@ -683,6 +711,10 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
         public boolean getIsFavorite() {
             return mIsFavorite;
+        }
+
+        public void setIsFavorite(boolean isFavorite) {
+            mIsFavorite = isFavorite;
         }
 
         public String getCityCode() {
