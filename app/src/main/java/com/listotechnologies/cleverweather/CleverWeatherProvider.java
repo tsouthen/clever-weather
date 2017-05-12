@@ -33,6 +33,7 @@ public class CleverWeatherProvider extends ContentProvider {
     // -------------- CITY DEFINITIONS ------------
     public static final String CITY_TABLE = "City";
 
+    public static final String CITY_ID_COLUMN = "City._id";
     public static final String CITY_CODE_COLUMN = "Code";
     public static final int CITY_CODE_COLUMN_POSITION = 1;
     public static final String CITY_NAMEEN_COLUMN = "NameEn";
@@ -54,6 +55,7 @@ public class CleverWeatherProvider extends ContentProvider {
     // -------------- FORECAST DEFINITIONS ------------
     public static final String FORECAST_TABLE = "Forecast";
 
+    public static final String FORECAST_ID_COLUMN = "Forecast._id";
     public static final String FORECAST_CITYCODE_COLUMN = "CityCode";
     public static final int FORECAST_CITYCODE_COLUMN_POSITION = 1;
     public static final String FORECAST_UTCISSUETIME_COLUMN = "UTCIssueTime";
@@ -70,10 +72,6 @@ public class CleverWeatherProvider extends ContentProvider {
     public static final int FORECAST_HIGHTEMP_COLUMN_POSITION = 7;
     public static final int ALL_FORECAST = 2;
     public static final int SINGLE_FORECAST = 3;
-
-    
-
-    public static final String ROW_ID = "_id";
 
     private static final UriMatcher uriMatcher;
 
@@ -123,18 +121,24 @@ public class CleverWeatherProvider extends ContentProvider {
         return true;
     }
 
+    private String getTableNameFromUri(Uri uri) {
+        return getTableNameFromUri(uri, false);
+    }
+
     /**
     * Returns the right table name for the given uri
     * @param uri
     * @return
     */
-    private String getTableNameFromUri(Uri uri){
+    private String getTableNameFromUri(Uri uri, boolean isQuery){
         switch (uriMatcher.match(uri)) {
             case ALL_CITY:
             case SINGLE_CITY:
                 return CITY_TABLE;
             case ALL_FORECAST:
             case SINGLE_FORECAST:
+                if (isQuery)
+                    return String.format("%1$s INNER JOIN %3$s ON (%1$s.%2$s = %3$s.%4$s)", FORECAST_TABLE, FORECAST_CITYCODE_COLUMN, CITY_TABLE, CITY_CODE_COLUMN);
                 return FORECAST_TABLE;
             default: break;
         }
@@ -163,7 +167,7 @@ public class CleverWeatherProvider extends ContentProvider {
     public Cursor query(Uri uri, String[] projection, String selection,
         String[] selectionArgs, String sortOrder) {
 
-        // Open thedatabase.
+        // Open the database.
         SQLiteDatabase db;
         try {
             db = myOpenHelper.getWritableDatabase();
@@ -178,17 +182,23 @@ public class CleverWeatherProvider extends ContentProvider {
         SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
 
         // If this is a row query, limit the result set to the passed in row.
+        String idColumn = null;
         switch (uriMatcher.match(uri)) {
             case SINGLE_CITY:
+                idColumn = CITY_ID_COLUMN;
+                break;
             case SINGLE_FORECAST:
-                String rowID = uri.getPathSegments().get(1);
-                queryBuilder.appendWhere(ROW_ID + "=" + rowID);
-            default: break;
+                idColumn = FORECAST_ID_COLUMN;
+                break;
+        }
+        if (idColumn != null) {
+            String rowID = uri.getPathSegments().get(1);
+            queryBuilder.appendWhere(idColumn + "=" + rowID);
         }
 
         // Specify the table on which to perform the query. This can
         // be a specific table or a join as required.
-        queryBuilder.setTables(getTableNameFromUri(uri));
+        queryBuilder.setTables(getTableNameFromUri(uri, true));
 
         // Execute the query.
         Cursor cursor = queryBuilder.query(db, projection, selection,
@@ -221,14 +231,19 @@ public class CleverWeatherProvider extends ContentProvider {
     public int delete(Uri uri, String selection, String[] selectionArgs) {
         SQLiteDatabase db = myOpenHelper.getWritableDatabase();
 
+        String idColumn = null;
         switch (uriMatcher.match(uri)) {
             case SINGLE_CITY:
+                idColumn = CITY_ID_COLUMN;
+                break;
             case SINGLE_FORECAST:
-                String rowID = uri.getPathSegments().get(1);
-                selection = ROW_ID + "=" + rowID + (!TextUtils.isEmpty(selection) ?  " AND (" + selection + ')' : "");
-            default: break;
+                idColumn = FORECAST_ID_COLUMN;
+                break;
         }
-
+        if (idColumn != null) {
+            String rowID = uri.getPathSegments().get(1);
+            selection = idColumn + "=" + rowID + (!TextUtils.isEmpty(selection) ? " AND (" + selection + ')' : "");
+        }
         if (selection == null)
             selection = "1";
 
@@ -261,12 +276,18 @@ public class CleverWeatherProvider extends ContentProvider {
         SQLiteDatabase db = myOpenHelper.getWritableDatabase();
 
         // If this is a row URI, limit the deletion to the specified row.
+        String idColumn = null;
         switch (uriMatcher.match(uri)) {
             case SINGLE_CITY:
+                idColumn = CITY_ID_COLUMN;
+                break;
             case SINGLE_FORECAST:
-                String rowID = uri.getPathSegments().get(1);
-                selection = ROW_ID + "=" + rowID + (!TextUtils.isEmpty(selection) ? " AND (" + selection + ')' : "");
-            default: break;
+                idColumn = FORECAST_ID_COLUMN;
+                break;
+        }
+        if (idColumn != null) {
+            String rowID = uri.getPathSegments().get(1);
+            selection = idColumn + "=" + rowID + (!TextUtils.isEmpty(selection) ? " AND (" + selection + ')' : "");
         }
 
         // Perform the update.

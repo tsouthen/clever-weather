@@ -152,15 +152,18 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
         setUnsetEmptyView(false);
-        String orderBy = CleverWeatherProvider.ROW_ID;
+        String orderBy = CleverWeatherProvider.FORECAST_ID_COLUMN;
         String[] projection = {
-                CleverWeatherProvider.ROW_ID,
+                CleverWeatherProvider.FORECAST_ID_COLUMN,
                 CleverWeatherProvider.FORECAST_NAME_COLUMN,
                 CleverWeatherProvider.FORECAST_SUMMARY_COLUMN,
                 CleverWeatherProvider.FORECAST_HIGHTEMP_COLUMN,
                 CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN,
                 CleverWeatherProvider.FORECAST_ICONCODE_COLUMN,
                 CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN,
+                CleverWeatherProvider.CITY_CODE_COLUMN,
+                CleverWeatherProvider.CITY_NAMEEN_COLUMN,
+                CleverWeatherProvider.CITY_ISFAVORITE_COLUMN
         };
 
         boolean forceRefresh = bundle != null && bundle.getBoolean(FORCE_REFRESH);
@@ -187,31 +190,35 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         mSwipeRefresh.setRefreshing(false);
         mRefreshing = false;
 
+        boolean byLocation = getArguments().getBoolean(ARG_BY_LOCATION);
+        if (byLocation) {
+            if (cursor.isBeforeFirst() && !cursor.isAfterLast())
+                cursor.moveToFirst();
+            if (!cursor.isAfterLast()) {
+                String cityCode = cursor.getString(7);
+                String cityName = cursor.getString(8);
+                boolean isFav = cursor.getInt(9) == 1;
+
+                Bundle bundle = getArguments();
+                bundle.putString(ARG_CITY_CODE, cityCode);
+                bundle.putString(ARG_CITY_NAME, cityName);
+                bundle.putBoolean(ARG_IS_FAVORITE, isFav);
+
+                mAdapter.setTitleString(cityName);
+                if (mFavoriteMenu != null) {
+                    setActionBarCheckboxChecked(mFavoriteMenu, isFav);
+                }
+            }
+        }
+
         mAdapter.changeCursor(cursor);
         Exception ex = CleverWeatherProviderExtended.getLastQueryException();
         if (ex != null)
             Toast.makeText(getActivity(), ex.getLocalizedMessage(), Toast.LENGTH_LONG).show();
         mLastLoad = new Date().getTime();
 
-        if (cursorLoader instanceof NearestCityForecastsLoader) {
-            NearestCityForecastsLoader loader = (NearestCityForecastsLoader) cursorLoader;
-            boolean isFav = loader.getIsFavorite();
-            Bundle bundle = getArguments();
-            bundle.putBoolean(ARG_IS_FAVORITE, isFav);
-            bundle.putString(ARG_CITY_NAME, loader.getCityName());
-            bundle.putString(ARG_CITY_CODE, loader.getCityCode());
-
-            if (getArguments().getString(ARG_CITY_NAME) != loader.getCityName())
-                setArguments(bundle);
-
-            if (isFav && !getArguments().getBoolean(ARG_IS_FAVORITE)) {
-                setArguments(bundle);
-            }
-            mAdapter.setTitleString(loader.getCityName());
-            if (mFavoriteMenu != null) {
-                setActionBarCheckboxChecked(mFavoriteMenu, isFav);
-                mFavoriteMenu.setVisible(!mAdapter.isEmpty());
-            }
+        if (byLocation && mFavoriteMenu != null) {
+            mFavoriteMenu.setVisible(!mAdapter.isEmpty());
         }
     }
 
@@ -266,8 +273,18 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             boolean isFav = !item.isChecked();
             setActionBarCheckboxChecked(item, isFav);
             getArguments().putBoolean(ARG_IS_FAVORITE, isFav);
+
             //update City database in background thread
             setIsFavorite(isFav);
+
+            //TODO: get called back by above call so we know the database has been updated
+            //reload current data (from database only, no location redo)
+            Loader<Cursor> cursorLoader = getLoaderManager().getLoader(0);
+            NearestCityForecastsLoader loader = (NearestCityForecastsLoader) cursorLoader;
+            if (loader != null) {
+                loader.setGetLocation(false);
+                getLoaderManager().restartLoader(0, null, this);
+            }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -678,6 +695,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         private String mCityCode = null;
         private String mCityName = null;
         private boolean mIsFavorite = false;
+        private boolean mGetLocation = true;
 
         public NearestCityForecastsLoader (Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder, boolean forceRefresh) {
             super(context, uri, projection, selection, selectionArgs, sortOrder, forceRefresh);
@@ -685,26 +703,29 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
         @Override
         public Cursor loadInBackground() {
-            mCityCode = "bogus";
-            mCityName = "Unknown";
-            mIsFavorite = false;
+            if (mGetLocation) {
+                mCityCode = "bogus";
+                mCityName = "Unknown";
+                mIsFavorite = false;
 
-            //get current location
-            LocationGetter locationGetter = TabbedActivity.getLocationGetter(getContext());
-            if (locationGetter.isLocationEnabled()) {
-                Location location = locationGetter.getLocation();
-                if (location != null) {
-                    Cursor cursor = CleverWeatherProviderExtended.queryClosestCity(getContext().getContentResolver(), location);
-                    if (cursor != null) {
-                        if (cursor.moveToNext()) {
-                            mCityName = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEEN_COLUMN));
-                            mIsFavorite = cursor.getInt(cursor.getColumnIndex(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN)) != 0;
-                            mCityCode = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_CODE_COLUMN));
+                //get current location
+                LocationGetter locationGetter = TabbedActivity.getLocationGetter(getContext());
+                if (locationGetter.isLocationEnabled()) {
+                    Location location = locationGetter.getLocation();
+                    if (location != null) {
+                        Cursor cursor = CleverWeatherProviderExtended.queryClosestCity(getContext().getContentResolver(), location);
+                        if (cursor != null) {
+                            if (cursor.moveToNext()) {
+                                mCityName = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEEN_COLUMN));
+                                mIsFavorite = cursor.getInt(cursor.getColumnIndex(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN)) != 0;
+                                mCityCode = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_CODE_COLUMN));
+                            }
+                            cursor.close();
                         }
-                        cursor.close();
                     }
                 }
             }
+            mGetLocation = true;
             setSelectionArgs(new String [] {mCityCode});
             return super.loadInBackground();
         }
@@ -713,16 +734,16 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             return mIsFavorite;
         }
 
-        public void setIsFavorite(boolean isFavorite) {
-            mIsFavorite = isFavorite;
-        }
-
         public String getCityCode() {
             return mCityCode;
         }
 
         public String getCityName() {
             return mCityName;
+        }
+
+        public void setGetLocation(boolean getLocation) {
+            mGetLocation = getLocation;
         }
     }
 }

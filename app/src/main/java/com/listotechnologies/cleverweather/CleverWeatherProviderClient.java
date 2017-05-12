@@ -51,7 +51,7 @@ public class CleverWeatherProviderClient{
     public static Cursor getAllCity(Context c){
     	ContentResolver cr = c.getContentResolver();
         String[] resultColumns = new String[] {
-                         CleverWeatherProvider.ROW_ID,
+                         CleverWeatherProvider.CITY_ID_COLUMN,
                          CleverWeatherProvider.CITY_CODE_COLUMN,
                          CleverWeatherProvider.CITY_NAMEEN_COLUMN,
                          CleverWeatherProvider.CITY_NAMEFR_COLUMN,
@@ -68,7 +68,7 @@ public class CleverWeatherProviderClient{
     public static Cursor getCity(long rowId, Context c){
     	ContentResolver cr = c.getContentResolver();
         String[] resultColumns = new String[] {
-                         CleverWeatherProvider.ROW_ID,
+                         CleverWeatherProvider.CITY_ID_COLUMN,
                          CleverWeatherProvider.CITY_CODE_COLUMN,
                          CleverWeatherProvider.CITY_NAMEEN_COLUMN,
                          CleverWeatherProvider.CITY_NAMEFR_COLUMN,
@@ -146,7 +146,7 @@ public class CleverWeatherProviderClient{
     public static Cursor getAllForecast(Context c){
     	ContentResolver cr = c.getContentResolver();
         String[] resultColumns = new String[] {
-                         CleverWeatherProvider.ROW_ID,
+                         CleverWeatherProvider.FORECAST_ID_COLUMN,
                          CleverWeatherProvider.FORECAST_CITYCODE_COLUMN,
                          CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN,
                          CleverWeatherProvider.FORECAST_NAME_COLUMN,
@@ -163,7 +163,7 @@ public class CleverWeatherProviderClient{
     public static Cursor getForecast(long rowId, Context c){
     	ContentResolver cr = c.getContentResolver();
         String[] resultColumns = new String[] {
-                         CleverWeatherProvider.ROW_ID,
+                         CleverWeatherProvider.FORECAST_ID_COLUMN,
                          CleverWeatherProvider.FORECAST_CITYCODE_COLUMN,
                          CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN,
                          CleverWeatherProvider.FORECAST_NAME_COLUMN,

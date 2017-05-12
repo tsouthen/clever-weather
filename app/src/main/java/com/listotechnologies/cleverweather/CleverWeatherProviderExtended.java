@@ -59,7 +59,7 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
 
     private void logForecastsTable(SQLiteDatabase db) {
         String[] cols = { FORECAST_CITYCODE_COLUMN, FORECAST_NAME_COLUMN, FORECAST_UTCISSUETIME_COLUMN };
-        String orderBy = FORECAST_CITYCODE_COLUMN + ", " + ROW_ID;
+        String orderBy = FORECAST_CITYCODE_COLUMN + ", " + FORECAST_ID_COLUMN;
         Cursor cursor = db.query(FORECAST_TABLE, cols, null, null, null, null, orderBy);
         while (cursor.moveToNext()) {
             String msg = String.format("%s, %s, %s", cursor.getString(0), cursor.getString(1), cursor.getString(2));
@@ -151,7 +151,7 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
             SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
             queryBuilder.setTables(CITY_TABLE);
 
-            String[] projection = new String[] { ROW_ID,
+            String[] projection = new String[] { CITY_ID_COLUMN,
                     String.format("%s as %s", CITY_NAMEEN_COLUMN, SearchManager.SUGGEST_COLUMN_TEXT_1),
                     String.format("%s as %s", CITY_PROVINCE_COLUMN, SearchManager.SUGGEST_COLUMN_TEXT_2),
                     String.format("%s||'|'||%s||'|'||%s as %s", CITY_CODE_COLUMN, CITY_ISFAVORITE_COLUMN, CITY_NAMEEN_COLUMN, SearchManager.SUGGEST_COLUMN_INTENT_DATA),
@@ -210,7 +210,7 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
 
     public static Cursor queryClosestCity(ContentResolver contentResolver, Location location) {
         ArrayList<String> projection = new ArrayList<String>();
-        projection.add(CleverWeatherProvider.ROW_ID);
+        projection.add(CleverWeatherProvider.CITY_ID_COLUMN);
         projection.add(CleverWeatherProvider.CITY_CODE_COLUMN);
         projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
         projection.add(CleverWeatherProvider.CITY_NAMEFR_COLUMN);

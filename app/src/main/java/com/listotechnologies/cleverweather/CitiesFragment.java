@@ -213,7 +213,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         String where = null;
         String orderBy = CleverWeatherProvider.CITY_NAMEEN_COLUMN + " COLLATE UNICODE";
         ArrayList<String> projection = new ArrayList<String>();
-        projection.add(CleverWeatherProvider.ROW_ID);
+        projection.add(CleverWeatherProvider.CITY_ID_COLUMN);
         projection.add(CleverWeatherProvider.CITY_CODE_COLUMN);
         projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
         projection.add(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
