@@ -24,6 +24,14 @@ public class LocationHelper {
         mNetworkOnly = networkOnly;
     }
 
+    public boolean getNetworkOnly() {
+        return mNetworkOnly;
+    }
+
+    public void setNetworkOnly(boolean networkOnly) {
+        mNetworkOnly = networkOnly;
+    }
+
     private LocationListener mLocationListenerGps = new LocationListener() {
         public void onLocationChanged(Location location) {
             if (!mOngoing)

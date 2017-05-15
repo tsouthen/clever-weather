@@ -364,7 +364,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
             Location location = null;
             LocationGetter locationGetter = TabbedActivity.getLocationGetter(getContext());
             if (locationGetter.isLocationEnabled())
-                location = locationGetter.getLocation();
+                location = locationGetter.getLocation(true);
 
             if (location != null) {
                 //add distance projection to projection

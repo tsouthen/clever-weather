@@ -40,12 +40,16 @@ public class LocationGetter {
     }
 
     public synchronized Location getLocation() {
+        return getLocation(false);
+    }
+
+    public synchronized Location getLocation(final boolean networkOnly) {
         try {
             synchronized (mGotLocationLock) {
                 new Thread() {
                     public void run() {
                         Looper.prepare();
-                        getLocationHelper().getLocation(mLocationResult);
+                        getLocationHelper(networkOnly).getLocation(mLocationResult);
                         Looper.loop();
                     }
                 }.start();
@@ -59,10 +63,16 @@ public class LocationGetter {
     }
 
     public LocationHelper getLocationHelper() {
+        return getLocationHelper(false);
+    }
+
+    public LocationHelper getLocationHelper(boolean networkOnly) {
         if (mLocationHelper == null) {
-            mLocationHelper = new LocationHelper(mContext, false);
+            mLocationHelper = new LocationHelper(mContext, networkOnly);
             mLocationHelper.setUpdateTimeout(mUpdateTimeout);
             mLocationHelper.setLocationExpiry(mLocationExpiryMins);
+        } else {
+            mLocationHelper.setNetworkOnly(networkOnly);
         }
         return mLocationHelper;
     }

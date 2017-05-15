@@ -10,6 +10,7 @@ import android.database.StaleDataException;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.text.Html;
 import android.text.Spanned;
@@ -696,6 +697,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         private String mCityName = null;
         private boolean mIsFavorite = false;
         private boolean mGetLocation = true;
+        private Location mLastLocation = null;
 
         public NearestCityForecastsLoader (Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder, boolean forceRefresh) {
             super(context, uri, projection, selection, selectionArgs, sortOrder, forceRefresh);
@@ -703,7 +705,14 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
         @Override
         public Cursor loadInBackground() {
-            if (mGetLocation) {
+            boolean getLocation = mGetLocation;
+            if (mLastLocation != null) {
+                //only update location every 15 mins
+                long diff = SystemClock.elapsedRealtimeNanos() - mLastLocation.getElapsedRealtimeNanos();
+                if (diff < (15 * 6e10))
+                    getLocation = false;
+            }
+            if (getLocation) {
                 mCityCode = "bogus";
                 mCityName = "Unknown";
                 mIsFavorite = false;
@@ -711,8 +720,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 //get current location
                 LocationGetter locationGetter = TabbedActivity.getLocationGetter(getContext());
                 if (locationGetter.isLocationEnabled()) {
-                    Location location = locationGetter.getLocation();
+                    Location location = locationGetter.getLocation(true);
                     if (location != null) {
+                        mLastLocation = location;
                         Cursor cursor = CleverWeatherProviderExtended.queryClosestCity(getContext().getContentResolver(), location);
                         if (cursor != null) {
                             if (cursor.moveToNext()) {
