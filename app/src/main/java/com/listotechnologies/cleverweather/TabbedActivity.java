@@ -6,6 +6,8 @@ import android.app.FragmentManager;
 import android.app.SearchManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v13.app.ActivityCompat;
@@ -23,10 +25,12 @@ import com.example.android.common.view.SlidingTabLayout;
 import java.lang.reflect.Field;
 import java.util.Locale;
 
-public class TabbedActivity extends BaseToolbarActivity implements ProvincesFragment.OnProvinceClickListener, CitiesFragment.OnCityClickListener {
+public class TabbedActivity extends BaseToolbarActivity implements ProvincesFragment.OnProvinceClickListener, CitiesFragment.OnCityClickListener, LocationHelper.LocationResultListener {
     SectionsPagerAdapter mSectionsPagerAdapter;
     ViewPager mViewPager;
     private static LocationGetter sLocationGetter = null;
+    private long mMinTime = 1000 * 60 * 15; //15 mins
+    private float mMinDist = 50000; //50 kms
 
     @Override
     protected int getContentId() {
@@ -38,9 +42,18 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         super.onCreate(savedInstanceState);
         ForceOverflowMenu.overrideHasPermanentMenuKey(this);
 
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the activity.
+        Location location = getLocationGetter(this).getLocationHelper().getLastLocation();
+        //mock location of Calgary to test location updates
+        //location = new Location(LocationManager.NETWORK_PROVIDER);
+        //location.setLatitude(51.0486);
+        //location.setLongitude(-114.0708);
+
+        // Create the adapter that will return a fragment for each of the primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getFragmentManager());
+        mSectionsPagerAdapter.setLocation(location);
+
+        //if we don't have a location, request it to return ASAP
+        getLocationGetter(this).getLocationHelper(false).requestLocationUpdates(location != null ? mMinTime : 0, location != null ? mMinDist : 0, this);
 
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
@@ -104,23 +117,55 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         ForecastsActivity.start(this, cityCode, cityName, isFavorite);
     }
 
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
+    @Override
+    public void onGotLocation(Location location) {
+        Location currLocation = mSectionsPagerAdapter.getLocation();
+        if (!getLocationGetter(this).getLocationHelper().isBetterLocation(location, currLocation))
+            return;
+        String currCityCode = null;
+        if (currLocation != null)
+            currCityCode = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), currLocation);
+        String newCityCode = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
+        if (newCityCode != null && !newCityCode.equals(currCityCode)) {
+            mSectionsPagerAdapter.setLocation(location);
+            //now that we have a decent location, make sure our location updates are less frequent
+            getLocationGetter(this).getLocationHelper(false).requestLocationUpdates(mMinTime, mMinDist, this);
+        }
+    }
 
+    public class SectionsPagerAdapter extends FragmentPagerAdapter {
         private Fragment[] mFragments;
+        private Location mLocation;
 
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
             mFragments = new Fragment[getCount()];
         }
 
+        public Location getLocation() {
+            return mLocation;
+        }
+
+        public void setLocation(Location location) {
+            mLocation = location;
+            if (mFragments[0] != null) {
+                CitiesFragment citiesFragment = (CitiesFragment) mFragments[0];
+                citiesFragment.setLocation(location);
+            }
+            if (mFragments[1] != null) {
+                ForecastsFragment forecastsFragment = (ForecastsFragment) mFragments[1];
+                forecastsFragment.setLocation(location);
+            }
+        }
+
         @Override
         public Fragment getItem(int position) {
             switch (position) {
                 case 0:
-                    mFragments[position] = CitiesFragment.newLocationInstance();
+                    mFragments[position] = CitiesFragment.newLocationInstance(mLocation);
                     break;
                 case 1:
-                    mFragments[position] = ForecastsFragment.newClosestInstance();
+                    mFragments[position] = ForecastsFragment.newClosestInstance(mLocation);
                     break;
                 case 2:
                     mFragments[position] = CitiesFragment.newFavoritesInstance();

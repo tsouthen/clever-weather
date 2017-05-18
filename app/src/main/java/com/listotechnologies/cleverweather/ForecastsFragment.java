@@ -46,6 +46,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     private static final String ARG_IS_FAVORITE = "ARG_IS_FAVORITE";
     private static final String ARG_CITY_NAME = "ARG_CITY_NAME";
     private static final String ARG_BY_LOCATION = "ARG_BY_LOCATION";
+    private static final String ARG_LOCATION = "ARG_LOCATION";
 
     public static ForecastsFragment newInstance(String cityCode, boolean isFavorite) {
         ForecastsFragment frag = new ForecastsFragment();
@@ -56,12 +57,23 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         return frag;
     }
 
-    public static ForecastsFragment newClosestInstance() {
+    public static ForecastsFragment newClosestInstance(Location location) {
         ForecastsFragment frag = new ForecastsFragment();
         Bundle bundle = new Bundle();
         bundle.putBoolean(ARG_BY_LOCATION, true);
+        if (location != null) {
+            bundle.putParcelable(ARG_LOCATION, location);
+        }
         frag.setArguments(bundle);
         return frag;
+    }
+
+    public void setLocation(Location location) {
+        if (location != null && getArguments().getBoolean(ARG_BY_LOCATION)) {
+            getArguments().putParcelable(ARG_LOCATION, location);
+            mSwipeRefresh.setRefreshing(true);
+            restartLoaderForceRefresh();
+        }
     }
 
     @Override
@@ -180,7 +192,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         mRefreshing = true;
 
         if (args.getBoolean(ARG_BY_LOCATION, false))
-            return new NearestCityForecastsLoader(getActivity(), CleverWeatherProvider.FORECAST_URI, projection, where, new String[] { cityCode }, orderBy, forceRefresh);
+            return new NearestCityForecastsLoader((Location) getArguments().getParcelable(ARG_LOCATION), getActivity(), CleverWeatherProvider.FORECAST_URI, projection, where, new String[] { cityCode }, orderBy, forceRefresh);
 
         return new ForecastsLoader(getActivity(), CleverWeatherProvider.FORECAST_URI, projection, where, new String[] { cityCode }, orderBy, forceRefresh);
     }
@@ -693,63 +705,35 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     }
 
     private static class NearestCityForecastsLoader extends ForecastsLoader {
-        private String mCityCode = null;
-        private String mCityName = null;
-        private boolean mIsFavorite = false;
         private boolean mGetLocation = true;
-        private Location mLastLocation = null;
+        private Location mLocation = null;
 
-        public NearestCityForecastsLoader (Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder, boolean forceRefresh) {
+        public NearestCityForecastsLoader (Location location, Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder, boolean forceRefresh) {
             super(context, uri, projection, selection, selectionArgs, sortOrder, forceRefresh);
+            mLocation = location;
         }
 
         @Override
         public Cursor loadInBackground() {
-            boolean getLocation = mGetLocation;
-            if (mLastLocation != null) {
-                //only update location every 15 mins
-                long diff = SystemClock.elapsedRealtimeNanos() - mLastLocation.getElapsedRealtimeNanos();
-                if (diff < (15 * 6e10))
-                    getLocation = false;
-            }
-            if (getLocation) {
-                mCityCode = "bogus";
-                mCityName = "Unknown";
-                mIsFavorite = false;
-
-                //get current location
+            Location location = mLocation;
+            if (mGetLocation && location == null) {
                 LocationGetter locationGetter = TabbedActivity.getLocationGetter(getContext());
                 if (locationGetter.isLocationEnabled()) {
-                    Location location = locationGetter.getLocation(true);
-                    if (location != null) {
-                        mLastLocation = location;
-                        Cursor cursor = CleverWeatherProviderExtended.queryClosestCity(getContext().getContentResolver(), location);
-                        if (cursor != null) {
-                            if (cursor.moveToNext()) {
-                                mCityName = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEEN_COLUMN));
-                                mIsFavorite = cursor.getInt(cursor.getColumnIndex(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN)) != 0;
-                                mCityCode = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_CODE_COLUMN));
-                            }
-                            cursor.close();
-                        }
-                    }
+                    location = locationGetter.getLocation(false);
                 }
             }
+            String cityCode = null;
+            if (location != null) {
+                mLocation = location;
+                cityCode = CleverWeatherProviderExtended.getClosestCity(getContext().getContentResolver(), location);
+            }
+
+            if (cityCode == null) {
+                cityCode = "bogus";
+            }
             mGetLocation = true;
-            setSelectionArgs(new String [] {mCityCode});
+            setSelectionArgs(new String [] {cityCode});
             return super.loadInBackground();
-        }
-
-        public boolean getIsFavorite() {
-            return mIsFavorite;
-        }
-
-        public String getCityCode() {
-            return mCityCode;
-        }
-
-        public String getCityName() {
-            return mCityName;
         }
 
         public void setGetLocation(boolean getLocation) {

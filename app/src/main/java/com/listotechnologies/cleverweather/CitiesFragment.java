@@ -7,7 +7,6 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.CursorLoader;
-import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.location.Location;
@@ -41,6 +40,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
     public static final String ARG_PROVINCE = "ARG_PROVINCE";
     public static final String ARG_FAVORITES = "ARG_FAVORITES";
+    public static final String ARG_BY_LOCATION = "ARG_BY_LOCATION";
     public static final String ARG_LOCATION = "ARG_LOCATION";
     public static final String ARG_SEARCH = "ARG_SEARCH";
 
@@ -64,10 +64,13 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         return frag;
     }
 
-    public static CitiesFragment newLocationInstance() {
+    public static CitiesFragment newLocationInstance(Location location) {
         CitiesFragment frag = new CitiesFragment();
         Bundle bundle = new Bundle();
-        bundle.putBoolean(ARG_LOCATION, true);
+        bundle.putBoolean(ARG_BY_LOCATION, true);
+        if (location != null) {
+            bundle.putParcelable(ARG_LOCATION, location);
+        }
         frag.setArguments(bundle);
         return frag;
     }
@@ -102,7 +105,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         int viewId = R.layout.fragment_list;
-        if (getArguments().containsKey(ARG_LOCATION))
+        if (getArguments().containsKey(ARG_BY_LOCATION))
             viewId = R.layout.fragment_list_refresh;
 
         View view = inflater.inflate(viewId, container, false);
@@ -143,7 +146,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
     private void setErrorText() {
         int id = 0;
-        if (getArguments().containsKey(ARG_LOCATION)) {
+        if (getArguments().containsKey(ARG_BY_LOCATION)) {
             id = R.string.location_error;
         } else if (getArguments().containsKey(ARG_SEARCH)) {
             id = R.string.search_error;
@@ -191,7 +194,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
                 filter.Mode = FilterMode.Province;
             } else if (bundle.containsKey(ARG_FAVORITES)) {
                 filter.Mode = FilterMode.Favorites;
-            } else if (bundle.containsKey(ARG_LOCATION)) {
+            } else if (bundle.containsKey(ARG_BY_LOCATION)) {
                 filter.Mode = FilterMode.Location;
             } else if (bundle.containsKey(ARG_SEARCH)) {
                 filter.Mode = FilterMode.Search;
@@ -220,7 +223,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
         Filter filter = getFilterFromArguments();
         if (filter.Mode == FilterMode.Location) {
-            return new ClosestCitiesLoader(getActivity(), CleverWeatherProvider.CITY_URI, projection.toArray(new String[projection.size()]), null, null, null);
+            return new ClosestCitiesLoader((Location)getArguments().getParcelable(ARG_LOCATION), getActivity(), CleverWeatherProvider.CITY_URI, projection.toArray(new String[projection.size()]), null, null, null);
         }
 
         switch (filter.Mode) {
@@ -337,7 +340,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        if (getArguments().containsKey(ARG_LOCATION))
+        if (getArguments().containsKey(ARG_BY_LOCATION))
             inflater.inflate(R.menu.refresh, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
@@ -353,20 +356,35 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         return super.onOptionsItemSelected(item);
     }
 
+    public void setLocation(Location location) {
+        if (location != null && getArguments().getBoolean(ARG_BY_LOCATION)) {
+            getArguments().putParcelable(ARG_LOCATION, location);
+            mSwipeRefresh.setRefreshing(true);
+            restartLoader();
+        }
+    }
+
     private static class ClosestCitiesLoader extends CursorLoader {
-        public ClosestCitiesLoader(Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+        private Location mLocation = null;
+
+        public ClosestCitiesLoader(Location location, Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
             super(context, uri, projection, selection, selectionArgs, sortOrder);
+            mLocation = location;
         }
 
         @Override
         public Cursor loadInBackground() {
             //get current location
-            Location location = null;
-            LocationGetter locationGetter = TabbedActivity.getLocationGetter(getContext());
-            if (locationGetter.isLocationEnabled())
-                location = locationGetter.getLocation(true);
+            Location location = mLocation;
+            if (location == null) {
+                LocationGetter locationGetter = TabbedActivity.getLocationGetter(getContext());
+                if (locationGetter.isLocationEnabled())
+                    location = locationGetter.getLocation(true);
+            }
 
             if (location != null) {
+                mLocation = location;
+
                 //add distance projection to projection
                 String colName = "dist";
                 String distProjection = CleverWeatherProviderExtended.getDistanceSquaredProjection(location, colName);

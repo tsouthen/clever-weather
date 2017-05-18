@@ -8,6 +8,9 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
+
+import java.util.List;
 
 public class LocationHelper {
     private Handler mHandler;
@@ -18,6 +21,8 @@ public class LocationHelper {
     private int mLocationExpiry = 0;
     private Context mContext;
     private boolean mOngoing = false;
+
+    private static final int TWO_MINUTES = 1000 * 60 * 2;
 
     public LocationHelper(Context context, boolean networkOnly) {
         mContext = context;
@@ -32,7 +37,7 @@ public class LocationHelper {
         mNetworkOnly = networkOnly;
     }
 
-    private LocationListener mLocationListenerGps = new LocationListener() {
+    private class MyLocationListener implements LocationListener {
         public void onLocationChanged(Location location) {
             if (!mOngoing)
                 cancelTimerAndRemoveListeners();
@@ -47,24 +52,11 @@ public class LocationHelper {
 
         public void onStatusChanged(String provider, int status, Bundle extras) {
         }
-    };
+    }
 
-    private LocationListener mLocationListenerNetwork = new LocationListener() {
-        public void onLocationChanged(Location location) {
-            if (!mOngoing)
-                cancelTimerAndRemoveListeners();
-            mLocationResultListener.onGotLocation(location);
-        }
-
-        public void onProviderDisabled(String provider) {
-        }
-
-        public void onProviderEnabled(String provider) {
-        }
-
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-        }
-    };
+    private LocationListener mLocationListenerGps = new MyLocationListener();
+    private LocationListener mLocationListenerNetwork = new MyLocationListener();
+    private LocationListener mLocationListenerPassive = new MyLocationListener();
 
     private LocationManager getLocationManager() {
         if (mLocMgr == null)
@@ -94,7 +86,13 @@ public class LocationHelper {
     public static boolean isLocationExpired(Location location, int locationExpiryMinutes) {
         if (location != null && locationExpiryMinutes > 0) {
             long diff = System.currentTimeMillis() - location.getTime();
-            return (diff > (locationExpiryMinutes * 60 * 1000));
+            boolean expired = (diff > (locationExpiryMinutes * 60 * 1000));
+            /*
+            if (expired) {
+                diff = SystemClock.elapsedRealtimeNanos() - location.getElapsedRealtimeNanos();
+                expired = diff > (locationExpiryMinutes * 60 * 1e9);
+            }*/
+            return expired;
         }
         return false;
     }
@@ -112,20 +110,21 @@ public class LocationHelper {
         }
 
         // don't start listeners if no provider is enabled
-        if (!isGpsEnabled() && !isNetworkEnabled())
-            return false;
+        //if (!isGpsEnabled() && !isNetworkEnabled())
+        //    return false;
 
         // use LocationResult callback class to pass location value from LocationHelper to user code.
         mLocationResultListener = result;
         mOngoing = false;
         Looper looper = Looper.myLooper();
         if (isGpsEnabled()) {
-            mLocMgr.requestSingleUpdate(LocationManager.GPS_PROVIDER, mLocationListenerGps, looper);
+            getLocationManager().requestSingleUpdate(LocationManager.GPS_PROVIDER, mLocationListenerGps, looper);
         }
         
         if (isNetworkEnabled()) {
-            mLocMgr.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, mLocationListenerNetwork, looper);
+            getLocationManager().requestSingleUpdate(LocationManager.NETWORK_PROVIDER, mLocationListenerNetwork, looper);
         }
+        getLocationManager().requestSingleUpdate(LocationManager.PASSIVE_PROVIDER, mLocationListenerPassive, looper);
 
         mHandler = new Handler(looper);
         mHandler.postDelayed(new Runnable() {
@@ -140,11 +139,12 @@ public class LocationHelper {
 
     public boolean requestLocationUpdates(long minTime, float minDistance, LocationResultListener result) {
         //see if last location is still valid
+        /*
         Location location = getLastLocation();
         if (location != null && !isLocationExpired(location)) {
             result.onGotLocation(location);
             return true;
-        }
+        }*/
 
         // don't start listeners if no provider is enabled
         if (!isGpsEnabled() && !isNetworkEnabled())
@@ -157,9 +157,11 @@ public class LocationHelper {
         mHandler = null;
 
         if (isNetworkEnabled())
-            mLocMgr.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, minTime, minDistance, mLocationListenerNetwork, looper);
+            getLocationManager().requestLocationUpdates(LocationManager.NETWORK_PROVIDER, minTime, minDistance, mLocationListenerNetwork, looper);
         if (isGpsEnabled())
-            mLocMgr.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, mLocationListenerGps, looper);
+            getLocationManager().requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, mLocationListenerGps, looper);
+
+        getLocationManager().requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, minTime, minDistance, mLocationListenerPassive, looper);
         return true;
     }
 
@@ -173,11 +175,12 @@ public class LocationHelper {
 
     private void removeListeners() {
         if (isGpsEnabled()) {
-            mLocMgr.removeUpdates(mLocationListenerGps);
+            getLocationManager().removeUpdates(mLocationListenerGps);
         }
         if (isNetworkEnabled()) {
-            mLocMgr.removeUpdates(mLocationListenerNetwork);
+            getLocationManager().removeUpdates(mLocationListenerNetwork);
         }
+        getLocationManager().removeUpdates(mLocationListenerPassive);
     }
     
     public interface LocationResultListener {
@@ -192,44 +195,71 @@ public class LocationHelper {
         mUpdateTimeout = timeoutInSeconds;
     }
 
-    public Location getLastLocation() {
-        Location netLoc = null;
-        Location gpsLoc = null;
-
-        if (isGpsEnabled()) {
-            gpsLoc = mLocMgr.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        }
-        
-        if (isNetworkEnabled()) {
-            netLoc = mLocMgr.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+    /** Determines whether one Location reading is better than the current Location fix
+     * @param location  The new Location that you want to evaluate
+     * @param currentBestLocation  The current Location fix, to which you want to compare the new one
+     */
+    public boolean isBetterLocation(Location location, Location currentBestLocation) {
+        if (currentBestLocation == null) {
+            // A new location is always better than no location
+            return true;
         }
 
-        // if we have both values use the latest one
-        if (gpsLoc != null && netLoc != null) {
-            if (gpsLoc.getTime() > netLoc.getTime())
-                return gpsLoc;
-            else
-                return netLoc;
-        } else if (gpsLoc != null) {
-            return gpsLoc;
-        } else {
-            return netLoc;
+        // Check whether the new location fix is newer or older
+        long timeDelta = location.getTime() - currentBestLocation.getTime();
+        boolean isSignificantlyNewer = timeDelta > TWO_MINUTES;
+        boolean isSignificantlyOlder = timeDelta < -TWO_MINUTES;
+        boolean isNewer = timeDelta > 0;
+
+        // If it's been more than two minutes since the current location, use the new location
+        // because the user has likely moved
+        if (isSignificantlyNewer) {
+            return true;
+            // If the new location is more than two minutes older, it must be worse
+        } else if (isSignificantlyOlder) {
+            return false;
         }
+
+        // Check whether the new location fix is more or less accurate
+        int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
+        boolean isLessAccurate = accuracyDelta > 0;
+        boolean isMoreAccurate = accuracyDelta < 0;
+        boolean isSignificantlyLessAccurate = accuracyDelta > 200;
+
+        // Check if the old and new location are from the same provider
+        boolean isFromSameProvider = isSameProvider(location.getProvider(),
+                currentBestLocation.getProvider());
+
+        // Determine location quality using a combination of timeliness and accuracy
+        if (isMoreAccurate) {
+            return true;
+        } else if (isNewer && !isLessAccurate) {
+            return true;
+        } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
+            return true;
+        }
+        return false;
     }
 
-    /* variation on above from stack exchange
-    private Location getLastKnownLocation() {
-        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        List<String> providers = lm.getProviders(true);
-
-        //Loop over the array backwards, and if you get an accurate location, then break
-        for (int ii = providers.size()-1; ii >= 0; ii--) {
-            Location location = lm.getLastKnownLocation(providers.get(ii));
-            if (location != null)
-                return location;
+    /** Checks whether two providers are the same */
+    private boolean isSameProvider(String provider1, String provider2) {
+        if (provider1 == null) {
+            return provider2 == null;
         }
-        return null;
-    } */
+        return provider1.equals(provider2);
+    }
+
+    public Location getLastLocation() {
+        Location bestLoc = null;
+        List<String> providers = getLocationManager().getProviders(true);
+        for (String provider: providers) {
+            Location loc = getLocationManager().getLastKnownLocation(provider);
+            if (loc != null && isBetterLocation(loc, bestLoc)) {
+                bestLoc = loc;
+            }
+        }
+        return bestLoc;
+    }
 
     public int getLocationExpiry() {
         return mLocationExpiry;

@@ -224,6 +224,19 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
 
         return contentResolver.query(CleverWeatherProvider.CITY_URI, projection.toArray(new String[projection.size()]), selection, null, orderBy);
     }
+
+    public static String getClosestCity(ContentResolver contentResolver, Location location) {
+        String cityCode = null;
+        Cursor cursor = queryClosestCity(contentResolver, location);
+        if (cursor != null) {
+            if (cursor.moveToNext()) {
+                cityCode = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_CODE_COLUMN));
+            }
+            cursor.close();
+        }
+        return cityCode;
+    }
+
     protected static class DbHelper2 extends DbHelper {
         private Context mContext;
 
