@@ -68,14 +68,6 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         return frag;
     }
 
-    public void setLocation(Location location) {
-        if (location != null && getArguments().getBoolean(ARG_BY_LOCATION)) {
-            getArguments().putParcelable(ARG_LOCATION, location);
-            mSwipeRefresh.setRefreshing(true);
-            restartLoaderForceRefresh();
-        }
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -251,6 +243,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         CheckBox favoriteView = (CheckBox) mFavoriteMenu.getActionView();
         if (favoriteView != null) {
             favoriteView.setButtonDrawable(R.drawable.favorite_selector);
+            TabbedActivity.setDrawableWhite(getActivity(), favoriteView.getButtonDrawable());
             favoriteView.setChecked(checked);
             favoriteView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -259,6 +252,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 }
             });
         }
+        TabbedActivity.setIconsWhite(getActivity(), menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
 
@@ -302,6 +296,14 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         return super.onOptionsItemSelected(item);
     }
 
+    public void setLocation(Location location) {
+        if (location != null && getArguments().getBoolean(ARG_BY_LOCATION)) {
+            getArguments().putParcelable(ARG_LOCATION, location);
+            mSwipeRefresh.setRefreshing(true);
+            restartLoaderForceRefresh();
+        }
+    }
+
     private void setUnsetEmptyView(boolean set) {
         if (mEmptyView == null)
             return;
@@ -317,7 +319,8 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     private void restartLoaderForceRefresh() {
         setUnsetEmptyView(false);
         //close the cursor so it isn't notified of changes we're about to make
-        mAdapter.getCursor().close();
+        if (mAdapter.getCursor() != null)
+            mAdapter.getCursor().close();
         Bundle bundle = new Bundle();
         bundle.putBoolean(FORCE_REFRESH, true);
         mRefreshing = true;
@@ -705,7 +708,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     }
 
     private static class NearestCityForecastsLoader extends ForecastsLoader {
-        private boolean mGetLocation = true;
+        private boolean mGetLocation = false;
         private Location mLocation = null;
 
         public NearestCityForecastsLoader (Location location, Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder, boolean forceRefresh) {
@@ -731,7 +734,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             if (cityCode == null) {
                 cityCode = "bogus";
             }
-            mGetLocation = true;
+            mGetLocation = location == null;
             setSelectionArgs(new String [] {cityCode});
             return super.loadInBackground();
         }

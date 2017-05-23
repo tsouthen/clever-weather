@@ -2,5 +2,7 @@
 <resources>
     <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorAccent">@android:color/holo_orange_dark</item>
+        <item name="android:statusBarColor">?attr/colorPrimaryDark</item>
+        <item name="colorPrimary">@android:color/holo_orange_dark</item>
     </style>
 </resources>

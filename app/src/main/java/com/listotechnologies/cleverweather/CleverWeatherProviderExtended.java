@@ -210,13 +210,13 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
 
     public static Cursor queryClosestCity(ContentResolver contentResolver, Location location) {
         ArrayList<String> projection = new ArrayList<String>();
-        projection.add(CleverWeatherProvider.CITY_ID_COLUMN);
+        //projection.add(CleverWeatherProvider.CITY_ID_COLUMN);
         projection.add(CleverWeatherProvider.CITY_CODE_COLUMN);
-        projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
-        projection.add(CleverWeatherProvider.CITY_NAMEFR_COLUMN);
-        projection.add(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
-        projection.add(CleverWeatherProvider.CITY_LATITUDE_COLUMN);
-        projection.add(CleverWeatherProvider.CITY_LONGITUDE_COLUMN);
+        //projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
+        //projection.add(CleverWeatherProvider.CITY_NAMEFR_COLUMN);
+        //projection.add(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
+        //projection.add(CleverWeatherProvider.CITY_LATITUDE_COLUMN);
+        //projection.add(CleverWeatherProvider.CITY_LONGITUDE_COLUMN);
         String colName = "dist";
         projection.add(getDistanceSquaredProjection(location, colName));
         String orderBy = colName + " limit 1";

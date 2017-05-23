@@ -6,10 +6,20 @@
     android:orientation="vertical">
     <include layout="@layout/toolbar" />
 
-    <com.example.android.common.view.SlidingTabLayout
+    <!--
+       <com.example.android.common.view.SlidingTabLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/tabs" />
+    -->
+    <android.support.design.widget.TabLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:tabGravity="fill"
+        app:tabIndicatorHeight="4dp"
+        android:elevation="1dp"
+        android:outlineProvider="bounds"
+        android:id="@+id/tabs"/>
 
     <android.support.v4.view.ViewPager
         xmlns:tools="http://schemas.android.com/tools"

@@ -343,6 +343,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         if (getArguments().containsKey(ARG_BY_LOCATION))
             inflater.inflate(R.menu.refresh, menu);
         super.onCreateOptionsMenu(menu, inflater);
+        TabbedActivity.setIconsWhite(getActivity(), menu);
     }
 
     @Override

@@ -138,8 +138,8 @@ public class LocationHelper {
     }
 
     public boolean requestLocationUpdates(long minTime, float minDistance, LocationResultListener result) {
-        //see if last location is still valid
         /*
+        //see if last location is still valid
         Location location = getLastLocation();
         if (location != null && !isLocationExpired(location)) {
             result.onGotLocation(location);
@@ -147,8 +147,8 @@ public class LocationHelper {
         }*/
 
         // don't start listeners if no provider is enabled
-        if (!isGpsEnabled() && !isNetworkEnabled())
-            return false;
+        //if (!isGpsEnabled() && !isNetworkEnabled())
+        //    return false;
 
         // use LocationResult callback class to pass location value from LocationHelper to user code.
         mLocationResultListener = result;
@@ -163,6 +163,15 @@ public class LocationHelper {
 
         getLocationManager().requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, minTime, minDistance, mLocationListenerPassive, looper);
         return true;
+    }
+
+    public void cancelLocationUpdates() {
+        if (isNetworkEnabled())
+            getLocationManager().removeUpdates(mLocationListenerNetwork);
+        if (isGpsEnabled())
+            getLocationManager().removeUpdates(mLocationListenerGps);
+
+        getLocationManager().removeUpdates(mLocationListenerPassive);
     }
 
     public void cancelTimerAndRemoveListeners() {
