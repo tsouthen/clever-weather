@@ -12,8 +12,15 @@ public class BaseToolbarActivity extends AppCompatActivity {
         setContentView(getContentId());
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        if (toolbar != null)
+        if (toolbar != null) {
             setSupportActionBar(toolbar);
+        }
+    }
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        onBackPressed();
+        return true;
     }
 
     protected int getContentId() {

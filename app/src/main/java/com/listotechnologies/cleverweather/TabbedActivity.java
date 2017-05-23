@@ -147,15 +147,17 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        if (lastLocation != null)
-            mSectionsPagerAdapter.setLocation(lastLocation);
-
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            if (lastLocation != null)
+                mSectionsPagerAdapter.setLocation(lastLocation);
+        }
         startLocationUpdates();
     }
 
     private void startLocationUpdates() {
-        if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+            mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
             LocationRequest locationRequest = new LocationRequest();
             locationRequest.setInterval(1000 * 60 * 15); //15 mins
             locationRequest.setFastestInterval(1000 * 60 * 5); //5 mins
@@ -186,20 +188,20 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         }
     }
 
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
+    private class SectionsPagerAdapter extends FragmentPagerAdapter {
         private Fragment[] mFragments;
         private Location mLocation;
 
-        public SectionsPagerAdapter(FragmentManager fm) {
+        SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
             mFragments = new Fragment[getCount()];
         }
 
-        public Location getLocation() {
+        Location getLocation() {
             return mLocation;
         }
 
-        public void setLocation(Location location) {
+        void setLocation(Location location) {
             mLocation = location;
             if (mFragments[0] != null) {
                 CitiesFragment citiesFragment = (CitiesFragment) mFragments[0];
@@ -253,9 +255,5 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         //    }
         //    return null;
         //}
-
-        public Fragment getFragmentAtPosition(int position) {
-            return mFragments[position];
-        }
     }
 }

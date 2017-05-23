@@ -1,6 +1,5 @@
 package com.listotechnologies.cleverweather;
 
-import android.app.Activity;
 import android.app.ListFragment;
 import android.app.LoaderManager;
 import android.content.ContentResolver;
@@ -18,7 +17,6 @@ import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,7 +42,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     public static final String ARG_LOCATION = "ARG_LOCATION";
     public static final String ARG_SEARCH = "ARG_SEARCH";
 
-    public interface OnCityClickListener {
+    interface OnCityClickListener {
         void onCityClick(String cityCode, String cityName, boolean isFavorite);
     }
 
@@ -84,10 +82,10 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        if (activity instanceof OnCityClickListener)
-            mClickListener = (OnCityClickListener) activity;
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof OnCityClickListener)
+            mClickListener = (OnCityClickListener) context;
     }
 
     @Override
@@ -126,14 +124,12 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     }
 
     private void setUnsetEmptyView(boolean set) {
-        if (mEmptyView == null)
+        if (mEmptyView == null || getView() == null)
             return;
 
         if (set) {
             getListView().setEmptyView(mEmptyView);
         } else {
-            if (mEmptyView != null)
-                mEmptyView.setVisibility(View.GONE);
             getListView().setEmptyView(null);
         }
     }
@@ -167,7 +163,6 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
         registerForContextMenu(getListView());
 
-        int resId = 0;
         String[] dataColumns = {CleverWeatherProvider.CITY_NAMEEN_COLUMN};
         int[] viewIds = {android.R.id.text1};
 
@@ -176,11 +171,11 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         getLoaderManager().initLoader(0, null, this);
     }
 
-    private enum FilterMode {None, Location, Favorites, Search, Province};
+    private enum FilterMode { None, Location, Favorites, Search, Province }
 
     private static class Filter {
-        public FilterMode Mode;
-        public String Arguments;
+        FilterMode Mode;
+        String Arguments;
     }
 
     private Filter getFilterFromArguments() {
@@ -215,7 +210,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         mRefreshing = true;
         String where = null;
         String orderBy = CleverWeatherProvider.CITY_NAMEEN_COLUMN + " COLLATE UNICODE";
-        ArrayList<String> projection = new ArrayList<String>();
+        ArrayList<String> projection = new ArrayList<>();
         projection.add(CleverWeatherProvider.CITY_ID_COLUMN);
         projection.add(CleverWeatherProvider.CITY_CODE_COLUMN);
         projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
@@ -349,7 +344,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
     private static class ClosestCitiesLoader extends CursorLoader {
         private Location mLocation = null;
 
-        public ClosestCitiesLoader(Location location, Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+        ClosestCitiesLoader(Location location, Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
             super(context, uri, projection, selection, selectionArgs, sortOrder);
             mLocation = location;
         }
@@ -360,7 +355,7 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
                 //add distance projection to projection
                 String colName = "dist";
                 String distProjection = CleverWeatherProviderExtended.getDistanceSquaredProjection(mLocation, colName);
-                ArrayList<String> projection = new ArrayList<String>(Arrays.asList(getProjection()));
+                ArrayList<String> projection = new ArrayList<>(Arrays.asList(getProjection()));
                 projection.add(distProjection);
                 setProjection(projection.toArray(new String[projection.size()]));
 

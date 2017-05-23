@@ -25,6 +25,9 @@ public class ForecastsActivity extends BaseToolbarActivity {
             ForecastsFragment fragment = ForecastsFragment.newInstance(cityCode, isFavorite);
             getFragmentManager().beginTransaction().add(R.id.content, fragment).commit();
         }
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
     }
 
     @Override

@@ -22,6 +22,8 @@ public class ProvinceActivity extends BaseToolbarActivity {
             String provAbbr = getIntent().getStringExtra(EXTRA_PROVINCE_ABBR);
             getFragmentManager().beginTransaction().add(R.id.content, CitiesFragment.newProvinceInstance(provAbbr)).commit();
         }
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
     }
 
     @Override

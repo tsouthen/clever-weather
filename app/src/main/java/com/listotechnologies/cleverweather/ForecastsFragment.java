@@ -93,14 +93,14 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     }
 
     private void setErrorText() {
-        int id = 0;
+        int id ;
         if (getArguments().containsKey(ARG_BY_LOCATION)) {
             id = R.string.location_error;
         } else {
             id = R.string.forecast_error;
         }
 
-        if (id != 0 && mEmptyView != null) {
+        if (mEmptyView != null) {
             TextView errorText = (TextView) mEmptyView.findViewById(R.id.error_text);
             if (errorText != null)
                 errorText.setText(id);
@@ -184,7 +184,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         mSwipeRefresh.setRefreshing(true);
         mRefreshing = true;
 
-        if (args.getBoolean(ARG_BY_LOCATION, false))
+        if (args != null && args.getBoolean(ARG_BY_LOCATION, false))
             return new NearestCityForecastsLoader((Location) getArguments().getParcelable(ARG_LOCATION), getActivity(), CleverWeatherProvider.FORECAST_URI, projection, where, new String[] { cityCode }, orderBy, forceRefresh);
 
         return new ForecastsLoader(getActivity(), CleverWeatherProvider.FORECAST_URI, projection, where, new String[] { cityCode }, orderBy, forceRefresh);
@@ -301,7 +301,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     }
 
     private void setUnsetEmptyView(boolean set) {
-        if (mEmptyView == null)
+        if (mEmptyView == null || getView() == null)
             return;
 
         if (set) {
@@ -359,7 +359,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         private boolean mExpanded[];
         private String mTitleString;
 
-        public ForecastAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flags) {
+        ForecastAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flags) {
             super(context, layout, c, from, to, flags);
             setViewBinder(mViewBinder);
             mContext = context;
@@ -385,7 +385,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            View view = null;
+            View view;
             //not sure why this is sometimes happening in the wild
             try {
                 view = super.getView(position, convertView, parent);
