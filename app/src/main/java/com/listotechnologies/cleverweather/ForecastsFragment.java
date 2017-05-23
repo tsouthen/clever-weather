@@ -7,6 +7,7 @@ import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
 import android.database.StaleDataException;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
@@ -242,8 +243,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         mFavoriteMenu.setChecked(checked);
         CheckBox favoriteView = (CheckBox) mFavoriteMenu.getActionView();
         if (favoriteView != null) {
-            favoriteView.setButtonDrawable(R.drawable.favorite_selector);
-            TabbedActivity.setDrawableWhite(getActivity(), favoriteView.getButtonDrawable());
+            Drawable drawable = getResources().getDrawable(R.drawable.favorite_selector);
+            TabbedActivity.setDrawableWhite(getActivity(), drawable);
+            favoriteView.setButtonDrawable(drawable);
             favoriteView.setChecked(checked);
             favoriteView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -270,12 +272,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_refresh) {
-            if (!mRefreshing) {
-                mSwipeRefresh.setRefreshing(true);
-                restartLoaderForceRefresh();
-            }
-        } else if (item.getItemId() == R.id.menu_is_favorite) {
+        if (item.getItemId() == R.id.menu_is_favorite) {
             //toggle check state
             boolean isFav = !item.isChecked();
             setActionBarCheckboxChecked(item, isFav);
@@ -289,7 +286,6 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             Loader<Cursor> cursorLoader = getLoaderManager().getLoader(0);
             NearestCityForecastsLoader loader = (NearestCityForecastsLoader) cursorLoader;
             if (loader != null) {
-                loader.setGetLocation(false);
                 getLoaderManager().restartLoader(0, null, this);
             }
         }
@@ -708,7 +704,6 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     }
 
     private static class NearestCityForecastsLoader extends ForecastsLoader {
-        private boolean mGetLocation = false;
         private Location mLocation = null;
 
         public NearestCityForecastsLoader (Location location, Context context, Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder, boolean forceRefresh) {
@@ -718,29 +713,15 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
         @Override
         public Cursor loadInBackground() {
-            Location location = mLocation;
-            if (mGetLocation && location == null) {
-                LocationGetter locationGetter = TabbedActivity.getLocationGetter(getContext());
-                if (locationGetter.isLocationEnabled()) {
-                    location = locationGetter.getLocation(false);
-                }
-            }
             String cityCode = null;
-            if (location != null) {
-                mLocation = location;
-                cityCode = CleverWeatherProviderExtended.getClosestCity(getContext().getContentResolver(), location);
+            if (mLocation != null) {
+                cityCode = CleverWeatherProviderExtended.getClosestCity(getContext().getContentResolver(), mLocation);
             }
-
             if (cityCode == null) {
                 cityCode = "bogus";
             }
-            mGetLocation = location == null;
             setSelectionArgs(new String [] {cityCode});
             return super.loadInBackground();
-        }
-
-        public void setGetLocation(boolean getLocation) {
-            mGetLocation = getLocation;
         }
     }
 }

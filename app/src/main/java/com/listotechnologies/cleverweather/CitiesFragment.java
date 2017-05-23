@@ -338,25 +338,6 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
         task.execute();
     }
 
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        if (getArguments().containsKey(ARG_BY_LOCATION))
-            inflater.inflate(R.menu.refresh, menu);
-        super.onCreateOptionsMenu(menu, inflater);
-        TabbedActivity.setIconsWhite(getActivity(), menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_refresh) {
-            if (!mRefreshing) {
-                mSwipeRefresh.setRefreshing(true);
-                restartLoader();
-            }
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
     public void setLocation(Location location) {
         if (location != null && getArguments().getBoolean(ARG_BY_LOCATION)) {
             getArguments().putParcelable(ARG_LOCATION, location);
@@ -375,20 +356,10 @@ public class CitiesFragment extends ListFragment implements LoaderManager.Loader
 
         @Override
         public Cursor loadInBackground() {
-            //get current location
-            Location location = mLocation;
-            if (location == null) {
-                LocationGetter locationGetter = TabbedActivity.getLocationGetter(getContext());
-                if (locationGetter.isLocationEnabled())
-                    location = locationGetter.getLocation(true);
-            }
-
-            if (location != null) {
-                mLocation = location;
-
+            if (mLocation != null) {
                 //add distance projection to projection
                 String colName = "dist";
-                String distProjection = CleverWeatherProviderExtended.getDistanceSquaredProjection(location, colName);
+                String distProjection = CleverWeatherProviderExtended.getDistanceSquaredProjection(mLocation, colName);
                 ArrayList<String> projection = new ArrayList<String>(Arrays.asList(getProjection()));
                 projection.add(distProjection);
                 setProjection(projection.toArray(new String[projection.size()]));

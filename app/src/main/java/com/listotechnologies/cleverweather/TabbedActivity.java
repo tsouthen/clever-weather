@@ -9,9 +9,7 @@ import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
@@ -19,29 +17,17 @@ import android.support.v13.app.ActivityCompat;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.view.Menu;
-import android.view.ViewConfiguration;
 import android.widget.SearchView;
 
-import com.example.android.common.view.SlidingTabLayout;
-import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
-import java.lang.reflect.Field;
-import java.util.Locale;
-
-public class TabbedActivity extends BaseToolbarActivity implements ProvincesFragment.OnProvinceClickListener, CitiesFragment.OnCityClickListener, LocationHelper.LocationResultListener, GoogleApiClient.ConnectionCallbacks, LocationListener {
+public class TabbedActivity extends BaseToolbarActivity implements ProvincesFragment.OnProvinceClickListener, CitiesFragment.OnCityClickListener, GoogleApiClient.ConnectionCallbacks, LocationListener {
     SectionsPagerAdapter mSectionsPagerAdapter;
     ViewPager mViewPager;
-    private static LocationGetter sLocationGetter = null;
-    private long mMinTime = 1000 * 60 * 15; //15 mins in millisecs
-    private float mMinDist = 20000; //20 kms in meters
-    private boolean mStarted = false;
     private GoogleApiClient mGoogleApiClient = null;
 
     @Override
@@ -52,7 +38,6 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ForceOverflowMenu.overrideHasPermanentMenuKey(this);
 
         // Create the adapter that will return a fragment for each of the primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getFragmentManager());
@@ -61,12 +46,6 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         mViewPager.setCurrentItem(1);
-
-        //setup the tabs
-        //SlidingTabLayout tabs = (SlidingTabLayout) findViewById(R.id.tabs);
-        ////tabs.setDefaultTextColor(getResources().getColorStateList(R.color.tab_text));
-        //tabs.setViewPager(mViewPager);
-        //tabs.setSelectedIndicatorColors(getResources().getColor(R.color.indicator_color));
 
         TabLayout tabs = (TabLayout) findViewById(R.id.tabs);
         tabs.setupWithViewPager(mViewPager);
@@ -97,36 +76,14 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
     @Override
     protected void onResume() {
         super.onResume();
-        mStarted = true;
 
-        if (mGoogleApiClient.isConnected()) {
+        if (mGoogleApiClient.isConnected())
             startLocationUpdates();
-        }
-
-        /*
-        LocationHelper locationHelper = getLocationGetter(this).getLocationHelper(false);
-        Location location = locationHelper.getLastLocation();
-
-        //mock location of Calgary to test location updates
-        //location = new Location(LocationManager.NETWORK_PROVIDER);
-        //location.setLatitude(51.0486);
-        //location.setLongitude(-114.0708);
-
-        //if we don't have a location, request it to return ASAP
-        if (location != null) {
-            onGotLocation(location);
-        } else {
-            locationHelper.cancelLocationUpdates();
-            locationHelper.requestLocationUpdates(location != null ? mMinTime : 0, location != null ? mMinDist : 0, this);
-        }
-        */
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        mStarted = false;
-        //getLocationGetter(this).getLocationHelper().cancelLocationUpdates();
         stopLocationUpdates();
     }
 
@@ -143,15 +100,6 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
             finish();
             startActivity(getIntent());
         }
-    }
-
-    public static LocationGetter getLocationGetter(Context context) {
-        if (sLocationGetter == null)
-            sLocationGetter = new LocationGetter(context, 10, 15);
-        else
-            sLocationGetter.SetContext(context);
-
-        return sLocationGetter;
     }
 
     public static void setDrawableWhite(Context context, Drawable drawable) {
@@ -195,29 +143,6 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
     @Override
     public void onCityClick(String cityCode, String cityName, boolean isFavorite) {
         ForecastsActivity.start(this, cityCode, cityName, isFavorite);
-    }
-
-    @Override
-    public void onGotLocation(Location location) {
-        if (!mStarted)
-            return;
-
-        Location currLocation = mSectionsPagerAdapter.getLocation();
-        LocationHelper locationHelper = getLocationGetter(this).getLocationHelper(false);
-        if (locationHelper.isBetterLocation(location, currLocation)) {
-            String currCityCode = null;
-            if (currLocation != null)
-                currCityCode = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), currLocation);
-            String newCityCode = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
-            if (newCityCode != null && !newCityCode.equals(currCityCode)) {
-                mSectionsPagerAdapter.setLocation(location);
-            }
-        }
-        //now that we have received a location, make sure our location updates are less frequent
-        if (mSectionsPagerAdapter.getLocation() != null) {
-            locationHelper.cancelLocationUpdates();
-            locationHelper.requestLocationUpdates(mMinTime, mMinDist, this);
-        }
     }
 
     @Override
@@ -331,38 +256,6 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
 
         public Fragment getFragmentAtPosition(int position) {
             return mFragments[position];
-        }
-    }
-
-    public static class ForceOverflowMenu {
-        private boolean m_done = false;
-        private static ForceOverflowMenu s_instance = null;
-
-        private void possiblyOverrideHasPermanentMenuKey(Context context) {
-            if (m_done)
-                return;
-
-            m_done = true;
-
-            //Code from: http://stackoverflow.com/a/11438245/453479
-            try {
-                ViewConfiguration config = ViewConfiguration.get(context);
-                Field menuKeyField = ViewConfiguration.class.getDeclaredField("sHasPermanentMenuKey");
-                if (menuKeyField != null) {
-                    menuKeyField.setAccessible(true);
-                    if (menuKeyField.getBoolean(config))
-                        menuKeyField.setBoolean(config, false);
-                }
-            } catch (Exception ex) {
-                // Ignore
-            }
-        }
-
-        public static void overrideHasPermanentMenuKey(Context context) {
-            if (s_instance == null)
-                s_instance = new ForceOverflowMenu();
-
-            s_instance.possiblyOverrideHasPermanentMenuKey(context);
         }
     }
 }
