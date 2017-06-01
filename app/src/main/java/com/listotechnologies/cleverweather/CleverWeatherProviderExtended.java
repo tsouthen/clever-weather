@@ -12,6 +12,7 @@ import android.database.sqlite.SQLiteQueryBuilder;
 import android.location.Location;
 import android.net.Uri;
 import android.util.Log;
+import android.util.Pair;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -212,7 +213,7 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
         ArrayList<String> projection = new ArrayList<String>();
         //projection.add(CleverWeatherProvider.CITY_ID_COLUMN);
         projection.add(CleverWeatherProvider.CITY_CODE_COLUMN);
-        //projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
         //projection.add(CleverWeatherProvider.CITY_NAMEFR_COLUMN);
         //projection.add(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
         //projection.add(CleverWeatherProvider.CITY_LATITUDE_COLUMN);
@@ -225,16 +226,18 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
         return contentResolver.query(CleverWeatherProvider.CITY_URI, projection.toArray(new String[projection.size()]), selection, null, orderBy);
     }
 
-    public static String getClosestCity(ContentResolver contentResolver, Location location) {
+    public static Pair<String, String> getClosestCity(ContentResolver contentResolver, Location location) {
         String cityCode = null;
+        String cityName = null;
         Cursor cursor = queryClosestCity(contentResolver, location);
         if (cursor != null) {
             if (cursor.moveToNext()) {
                 cityCode = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_CODE_COLUMN));
+                cityName = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEEN_COLUMN));
             }
             cursor.close();
         }
-        return cityCode;
+        return new Pair<String, String>(cityCode, cityName);
     }
 
     protected static class DbHelper2 extends DbHelper {

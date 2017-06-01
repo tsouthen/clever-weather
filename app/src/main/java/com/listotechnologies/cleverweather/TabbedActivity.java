@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -17,7 +18,10 @@ import android.support.v13.app.ActivityCompat;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
+import android.util.Pair;
 import android.view.Menu;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.SearchView;
 
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -25,10 +29,15 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import java.util.List;
+
+import static android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH;
+
 public class TabbedActivity extends BaseToolbarActivity implements ProvincesFragment.OnProvinceClickListener, CitiesFragment.OnCityClickListener, GoogleApiClient.ConnectionCallbacks, LocationListener {
     SectionsPagerAdapter mSectionsPagerAdapter;
     ViewPager mViewPager;
     private GoogleApiClient mGoogleApiClient = null;
+    private Pair<String, String> mClosestCity = null;
 
     @Override
     protected int getContentId() {
@@ -45,7 +54,46 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionsPagerAdapter);
+        ViewPager.OnPageChangeListener onPageChangeListener = new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                //do nothing
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                int titleId = -1;
+                switch (position) {
+                    case 0:
+                        titleId = R.string.title_nearby;
+                        break;
+                    case 1:
+                        titleId = R.string.title_location;
+                        if (mClosestCity != null) {
+                            getSupportActionBar().setTitle(mClosestCity.second);
+                            return;
+                        }
+                        break;
+                    case 2:
+                        titleId = R.string.title_favorites;
+                        break;
+                    case 3:
+                        titleId = R.string.title_browse;
+                        break;
+                }
+                if (titleId >= 0) {
+                    getSupportActionBar().setTitle(getString(titleId));
+                }
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                //do nothing
+            }
+        };
+        mViewPager.addOnPageChangeListener(onPageChangeListener );
         mViewPager.setCurrentItem(1);
+        onPageChangeListener.onPageSelected(1);
 
         TabLayout tabs = (TabLayout) findViewById(R.id.tabs);
         tabs.setupWithViewPager(mViewPager);
@@ -64,6 +112,14 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        } else {
+            Location location = LocationUtility.getLastLocation((LocationManager) getSystemService(Context.LOCATION_SERVICE));
+            if (location != null) {
+                mSectionsPagerAdapter.setLocation(location);
+                mClosestCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
+                if (mClosestCity != null)
+                    getSupportActionBar().setTitle(mClosestCity.second);
+            }
         }
     }
 
@@ -121,13 +177,34 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         getMenuInflater().inflate(R.menu.tabbed, menu);
         setIconsWhite(this, menu);
 
-        SearchView searchView = (SearchView) menu.findItem(R.id.action_search).getActionView();
+        final SearchView searchView = (SearchView) menu.findItem(R.id.action_search).getActionView();
         if (searchView != null) {
             SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
             searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
             searchView.setIconifiedByDefault(false);
+            searchView.setImeOptions(IME_ACTION_SEARCH);
+            //searchView.setFocusable(true);
+            //searchView.setIconified(true);
+            //searchView.requestFocusFromTouch();
+            searchView.clearFocus();
+
+            //searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
+            //    @Override
+            //    public void onFocusChange(View view, boolean hasFocus) {
+            //        if (hasFocus) {
+            //            showInputMethod(view.findFocus());
+            //        }
+            //    }
+            //});
         }
         return true;
+    }
+
+    private void showInputMethod(View view) {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null) {
+            imm.showSoftInput(view, 0);
+        }
     }
 
     @Override
@@ -179,12 +256,15 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
     @Override
     public void onLocationChanged(Location location) {
         Location currLocation = mSectionsPagerAdapter.getLocation();
-        String currCityCode = null;
+        Pair currCity = null;
         if (currLocation != null)
-            currCityCode = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), currLocation);
-        String newCityCode = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
-        if (newCityCode != null && !newCityCode.equals(currCityCode)) {
+            currCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), currLocation);
+        Pair newCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
+        if (newCity != null && !newCity.equals(currCity)) {
             mSectionsPagerAdapter.setLocation(location);
+            mClosestCity = newCity;
+            if (mViewPager.getCurrentItem() == 1)
+                getSupportActionBar().setTitle(mClosestCity.second);
         }
     }
 
@@ -255,5 +335,79 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         //    }
         //    return null;
         //}
+
+        public Fragment getFragment(int position) {
+            return mFragments[position];
+        }
+    }
+
+    public static class LocationUtility {
+        private static final int TWO_MINUTES = 1000 * 60 * 2;
+
+        /** Determines whether one Location reading is better than the current Location fix
+         * @param location  The new Location that you want to evaluate
+         * @param currentBestLocation  The current Location fix, to which you want to compare the new one
+         */
+        public static boolean isBetterLocation(Location location, Location currentBestLocation) {
+            if (currentBestLocation == null) {
+                // A new location is always better than no location
+                return true;
+            }
+
+            // Check whether the new location fix is newer or older
+            long timeDelta = location.getTime() - currentBestLocation.getTime();
+            boolean isSignificantlyNewer = timeDelta > TWO_MINUTES;
+            boolean isSignificantlyOlder = timeDelta < -TWO_MINUTES;
+            boolean isNewer = timeDelta > 0;
+
+            // If it's been more than two minutes since the current location, use the new location
+            // because the user has likely moved
+            if (isSignificantlyNewer) {
+                return true;
+                // If the new location is more than two minutes older, it must be worse
+            } else if (isSignificantlyOlder) {
+                return false;
+            }
+
+            // Check whether the new location fix is more or less accurate
+            int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
+            boolean isLessAccurate = accuracyDelta > 0;
+            boolean isMoreAccurate = accuracyDelta < 0;
+            boolean isSignificantlyLessAccurate = accuracyDelta > 200;
+
+            // Check if the old and new location are from the same provider
+            boolean isFromSameProvider = isSameProvider(location.getProvider(),
+                    currentBestLocation.getProvider());
+
+            // Determine location quality using a combination of timeliness and accuracy
+            if (isMoreAccurate) {
+                return true;
+            } else if (isNewer && !isLessAccurate) {
+                return true;
+            } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
+                return true;
+            }
+            return false;
+        }
+
+        /** Checks whether two providers are the same */
+        private static boolean isSameProvider(String provider1, String provider2) {
+            if (provider1 == null) {
+                return provider2 == null;
+            }
+            return provider1.equals(provider2);
+        }
+
+        public static Location getLastLocation(LocationManager locationManager) throws SecurityException {
+            Location bestLoc = null;
+            List<String> providers = locationManager.getProviders(true);
+            for (String provider: providers) {
+                Location loc = locationManager.getLastKnownLocation(provider);
+                if (loc != null && isBetterLocation(loc, bestLoc)) {
+                    bestLoc = loc;
+                }
+            }
+            return bestLoc;
+        }
     }
 }

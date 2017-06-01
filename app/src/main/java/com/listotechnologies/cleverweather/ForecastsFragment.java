@@ -12,11 +12,15 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.text.Html;
 import android.text.Spanned;
 import android.text.SpannedString;
 import android.text.method.LinkMovementMethod;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -41,6 +45,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     private View mEmptyView = null;
     private long mLastLoad;
     private boolean mRefreshing = false;
+    private FloatingActionButton mFab = null;
 
     private static final String FORCE_REFRESH = "ForceRefresh";
     private static final String ARG_CITY_CODE = "ARG_CITY_CODE";
@@ -77,7 +82,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_list_refresh, container, false);
+        final View view = inflater.inflate(R.layout.fragment_list_refresh_fab, container, false);
         mEmptyView = view.findViewById(android.R.id.empty);
         setErrorText();
         mSwipeRefresh = (SwipeRefreshLayout) view.findViewById(R.id.container);
@@ -89,7 +94,33 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                     restartLoaderForceRefresh();
             }
         });
+
+        mFab = (FloatingActionButton)view.findViewById(R.id.fab);
+        setFabIcon();
+        mFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean isFav = !getArguments().getBoolean(ARG_IS_FAVORITE);
+                getArguments().putBoolean(ARG_IS_FAVORITE, isFav);
+                setFabIcon();
+                setIsFavorite(isFav);
+                Snackbar.make(view.findViewById(R.id.coordinator), isFav ? "Added to Favourites" : "Removed from Favourites", Snackbar.LENGTH_LONG).show();
+            }
+        });
+
+        ListView listView = (ListView) view.findViewById(android.R.id.list);
+        if (listView != null)
+            ViewCompat.setNestedScrollingEnabled(listView, true);
         return view;
+    }
+
+    private void setFabIcon() {
+        if (mFab != null) {
+            boolean isFav = getArguments().getBoolean(ARG_IS_FAVORITE);
+            Drawable drawable = getResources().getDrawable(isFav ? R.drawable.ic_star_filled : R.drawable.ic_star);
+            TabbedActivity.setDrawableWhite(getActivity(), drawable);
+            mFab.setImageDrawable(drawable);
+        }
     }
 
     private void setErrorText() {
@@ -115,7 +146,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 CleverWeatherProvider.FORECAST_NAME_COLUMN,
                 CleverWeatherProvider.FORECAST_SUMMARY_COLUMN,
                 CleverWeatherProvider.FORECAST_HIGHTEMP_COLUMN,
-                CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN,
+                //CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN,
                 CleverWeatherProvider.FORECAST_ICONCODE_COLUMN,
                 CleverWeatherProvider.FORECAST_UTCISSUETIME_COLUMN,
         };
@@ -123,7 +154,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 android.R.id.text1,
                 android.R.id.text2,
                 R.id.hightemp,
-                R.id.lowtemp,
+                //R.id.lowtemp,
                 R.id.icon,
                 R.id.time_stamp,
         };
@@ -141,6 +172,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     public void onResume() {
         super.onResume();
         possiblyRefresh();
+        setFabIcon();
     }
 
     private void possiblyRefresh() {
@@ -178,7 +210,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         Bundle args = getArguments();
         if (args != null)
             cityCode = args.getString(ARG_CITY_CODE);
-        String where = CleverWeatherProvider.FORECAST_CITYCODE_COLUMN + "=?";
+        String where = CleverWeatherProvider.FORECAST_CITYCODE_COLUMN + "=?"; // + " AND " + CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN + " IS NULL";
 
         //TODO: only show this when we're actually refreshing from internet?
         mSwipeRefresh.setRefreshing(true);
@@ -235,28 +267,32 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         mAdapter.changeCursor(null);
     }
 
+    /*
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         boolean checked = getArguments().getBoolean(ARG_IS_FAVORITE);
-        inflater.inflate(R.menu.forecasts, menu);
+        //inflater.inflate(R.menu.forecasts, menu);
         mFavoriteMenu = menu.findItem(R.id.menu_is_favorite);
-        mFavoriteMenu.setChecked(checked);
-        CheckBox favoriteView = (CheckBox) mFavoriteMenu.getActionView();
-        if (favoriteView != null) {
-            Drawable drawable = getResources().getDrawable(R.drawable.favorite_selector);
-            TabbedActivity.setDrawableWhite(getActivity(), drawable);
-            favoriteView.setButtonDrawable(drawable);
-            favoriteView.setChecked(checked);
-            favoriteView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    onOptionsItemSelected(mFavoriteMenu);
-                }
-            });
+        if (mFavoriteMenu != null) {
+            mFavoriteMenu.setChecked(checked);
+            CheckBox favoriteView = (CheckBox) mFavoriteMenu.getActionView();
+            if (favoriteView != null) {
+                Drawable drawable = getResources().getDrawable(R.drawable.favorite_selector);
+                TabbedActivity.setDrawableWhite(getActivity(), drawable);
+                favoriteView.setButtonDrawable(drawable);
+                favoriteView.setChecked(checked);
+                favoriteView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        onOptionsItemSelected(mFavoriteMenu);
+                    }
+                });
+            }
         }
         TabbedActivity.setIconsWhite(getActivity(), menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
+    */
 
     private void setActionBarCheckboxChecked(MenuItem it, boolean checked) {
         if (it == null)
@@ -280,14 +316,6 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
             //update City database in background thread
             setIsFavorite(isFav);
-
-            //TODO: get called back by above call so we know the database has been updated
-            //reload current data (from database only, no location redo)
-            Loader<Cursor> cursorLoader = getLoaderManager().getLoader(0);
-            NearestCityForecastsLoader loader = (NearestCityForecastsLoader) cursorLoader;
-            if (loader != null) {
-                getLoaderManager().restartLoader(0, null, this);
-            }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -315,8 +343,8 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     private void restartLoaderForceRefresh() {
         setUnsetEmptyView(false);
         //close the cursor so it isn't notified of changes we're about to make
-        if (mAdapter.getCursor() != null)
-            mAdapter.getCursor().close();
+        //if (mAdapter.getCursor() != null)
+        //    mAdapter.getCursor().close();
         Bundle bundle = new Bundle();
         bundle.putBoolean(FORCE_REFRESH, true);
         mRefreshing = true;
@@ -326,6 +354,11 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
     private void setIsFavorite(final boolean isFavorite) {
         final String cityCode = getArguments().getString(ARG_CITY_CODE);
         CitiesFragment.setIsFavorite(getActivity().getContentResolver(), cityCode, isFavorite);
+
+        //TODO: get called back by above call so we know the database has been updated?
+
+        //reload current data
+        getLoaderManager().restartLoader(0, null, this);
     }
 
     @Override
@@ -333,7 +366,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         //toggle visibility of text2 and expand
         View text2 = v.findViewById(android.R.id.text2);
         swapVisibility(text2);
-        swapVisibility(v.findViewById(R.id.expand));
+        //swapVisibility(v.findViewById(R.id.expand));
         TextView timeStamp = (TextView) v.findViewById(R.id.time_stamp);
         if (timeStamp.getText().length() > 0)
             timeStamp.setVisibility(text2.getVisibility());
@@ -350,6 +383,10 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 vis = View.GONE;
             view.setVisibility(vis);
         }
+    }
+
+    public String getCityName() {
+        return getArguments().getString(ARG_CITY_NAME);
     }
 
     private static class ForecastAdapter extends SimpleCursorAdapter {
@@ -385,12 +422,15 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
+            //if (getCursor() != null && getCursor().isClosed())
+            //    return new View(mContext);
+
             View view;
             //not sure why this is sometimes happening in the wild
             try {
                 view = super.getView(position, convertView, parent);
             } catch (IllegalStateException isEx) {
-                return null;
+                return new View(mContext);
             }
             boolean expanded = false;
             if (mExpanded != null && position >= 0 && position < mExpanded.length)
@@ -403,7 +443,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         private void setVisibilities(View view, boolean expanded) {
             setVisibility(view, android.R.id.text2, expanded ? View.VISIBLE : View.GONE);
             setVisibility(view, R.id.time_stamp, expanded ? View.VISIBLE : View.GONE);
-            setVisibility(view, R.id.expand, expanded ? View.GONE : View.VISIBLE);
+            //setVisibility(view, R.id.expand, expanded ? View.GONE : View.VISIBLE);
         }
 
         private void setVisibility(View parent, int viewId, int visibility) {
@@ -419,9 +459,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             switch (v.getId()) {
                 case android.R.id.text1:
                     if (text == null || text.length() == 0) {
-                        if (mTitleString != null)
-                            text = mTitleString;
-                        else
+                        //if (mTitleString != null)
+                        //    text = mTitleString;
+                        //else
                             text = mContext.getString(R.string.now);
                     }
                     break;
@@ -715,7 +755,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         public Cursor loadInBackground() {
             String cityCode = null;
             if (mLocation != null) {
-                cityCode = CleverWeatherProviderExtended.getClosestCity(getContext().getContentResolver(), mLocation);
+                Pair<String, String> closest = CleverWeatherProviderExtended.getClosestCity(getContext().getContentResolver(), mLocation);
+                if (closest != null)
+                    cityCode = closest.first;
             }
             if (cityCode == null) {
                 cityCode = "bogus";

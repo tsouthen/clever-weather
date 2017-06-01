@@ -17,11 +17,11 @@ public class BaseToolbarActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public boolean onSupportNavigateUp() {
-        onBackPressed();
-        return true;
-    }
+    //@Override
+    //public boolean onSupportNavigateUp() {
+    //    onBackPressed();
+    //    return true;
+    //}
 
     protected int getContentId() {
         return R.layout.activity_base;
