@@ -11,7 +11,6 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.view.ViewCompat;
@@ -20,10 +19,7 @@ import android.text.Html;
 import android.text.Spanned;
 import android.text.SpannedString;
 import android.text.method.LinkMovementMethod;
-import android.util.Pair;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -755,9 +751,9 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         public Cursor loadInBackground() {
             String cityCode = null;
             if (mLocation != null) {
-                Pair<String, String> closest = CleverWeatherProviderExtended.getClosestCity(getContext().getContentResolver(), mLocation);
+                City closest = CleverWeatherProviderExtended.getClosestCity(getContext().getContentResolver(), mLocation);
                 if (closest != null)
-                    cityCode = closest.first;
+                    cityCode = closest.Code;
             }
             if (cityCode == null) {
                 cityCode = "bogus";

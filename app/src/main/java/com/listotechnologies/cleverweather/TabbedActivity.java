@@ -18,7 +18,6 @@ import android.support.v13.app.ActivityCompat;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
-import android.util.Pair;
 import android.view.Menu;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -37,7 +36,7 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
     SectionsPagerAdapter mSectionsPagerAdapter;
     ViewPager mViewPager;
     private GoogleApiClient mGoogleApiClient = null;
-    private Pair<String, String> mClosestCity = null;
+    private City mClosestCity = null;
 
     @Override
     protected int getContentId() {
@@ -70,7 +69,7 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
                     case 1:
                         titleId = R.string.title_location;
                         if (mClosestCity != null) {
-                            getSupportActionBar().setTitle(mClosestCity.second);
+                            getSupportActionBar().setTitle(mClosestCity.NameEn);
                             return;
                         }
                         break;
@@ -118,7 +117,7 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
                 mSectionsPagerAdapter.setLocation(location);
                 mClosestCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
                 if (mClosestCity != null)
-                    getSupportActionBar().setTitle(mClosestCity.second);
+                    getSupportActionBar().setTitle(mClosestCity.NameEn);
             }
         }
     }
@@ -256,15 +255,15 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
     @Override
     public void onLocationChanged(Location location) {
         Location currLocation = mSectionsPagerAdapter.getLocation();
-        Pair currCity = null;
+        City currCity = null;
         if (currLocation != null)
             currCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), currLocation);
-        Pair newCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
-        if (newCity != null && !newCity.equals(currCity)) {
+        City newCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
+        if (newCity != null && (currCity == null || !newCity.Code.equals(currCity.Code))) {
             mSectionsPagerAdapter.setLocation(location);
             mClosestCity = newCity;
             if (mViewPager.getCurrentItem() == 1)
-                getSupportActionBar().setTitle(mClosestCity.second);
+                getSupportActionBar().setTitle(mClosestCity.NameEn);
         }
     }
 

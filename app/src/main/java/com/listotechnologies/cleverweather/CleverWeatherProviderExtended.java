@@ -12,7 +12,6 @@ import android.database.sqlite.SQLiteQueryBuilder;
 import android.location.Location;
 import android.net.Uri;
 import android.util.Log;
-import android.util.Pair;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -226,18 +225,22 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
         return contentResolver.query(CleverWeatherProvider.CITY_URI, projection.toArray(new String[projection.size()]), selection, null, orderBy);
     }
 
-    public static Pair<String, String> getClosestCity(ContentResolver contentResolver, Location location) {
-        String cityCode = null;
-        String cityName = null;
+    public static City getClosestCity(ContentResolver contentResolver, Location location) {
+        City city = new City();
         Cursor cursor = queryClosestCity(contentResolver, location);
         if (cursor != null) {
             if (cursor.moveToNext()) {
-                cityCode = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_CODE_COLUMN));
-                cityName = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEEN_COLUMN));
+                city.Id = cursor.getInt(cursor.getColumnIndex(CleverWeatherProvider.CITY_ID_COLUMN));
+                city.Code = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_CODE_COLUMN));
+                city.NameEn = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEEN_COLUMN));
+                city.NameFr = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEFR_COLUMN));
+                city.IsFavorite = cursor.getInt(cursor.getColumnIndex(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN)) != 0;
+                city.Latitude = cursor.getFloat(cursor.getColumnIndex(CleverWeatherProvider.CITY_LATITUDE_COLUMN));
+                city.Longitude = cursor.getFloat(cursor.getColumnIndex(CleverWeatherProvider.CITY_LONGITUDE_COLUMN));
             }
             cursor.close();
         }
-        return new Pair<String, String>(cityCode, cityName);
+        return city;
     }
 
     protected static class DbHelper2 extends DbHelper {
