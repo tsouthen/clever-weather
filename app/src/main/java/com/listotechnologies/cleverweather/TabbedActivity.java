@@ -114,10 +114,10 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         } else {
             Location location = LocationUtility.getLastLocation((LocationManager) getSystemService(Context.LOCATION_SERVICE));
             if (location != null) {
-                mSectionsPagerAdapter.setLocation(location);
-                mClosestCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
-                if (mClosestCity != null)
-                    getSupportActionBar().setTitle(mClosestCity.NameEn);
+                //mSectionsPagerAdapter.setLocation(location);
+                //mClosestCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
+                //if (mClosestCity != null)
+                //    getSupportActionBar().setTitle(mClosestCity.NameEn);
             }
         }
     }
@@ -255,16 +255,15 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
     @Override
     public void onLocationChanged(Location location) {
         Location currLocation = mSectionsPagerAdapter.getLocation();
-        City currCity = null;
         if (currLocation != null)
-            currCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), currLocation);
+            mClosestCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), currLocation);
         City newCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
-        if (newCity != null && (currCity == null || !newCity.Code.equals(currCity.Code))) {
+        if (newCity != null && (mClosestCity == null || !newCity.Code.equals(mClosestCity.Code))) {
             mSectionsPagerAdapter.setLocation(location);
             mClosestCity = newCity;
-            if (mViewPager.getCurrentItem() == 1)
-                getSupportActionBar().setTitle(mClosestCity.NameEn);
         }
+        if (mClosestCity != null && mViewPager.getCurrentItem() == 1)
+            getSupportActionBar().setTitle(mClosestCity.NameEn);
     }
 
     private class SectionsPagerAdapter extends FragmentPagerAdapter {

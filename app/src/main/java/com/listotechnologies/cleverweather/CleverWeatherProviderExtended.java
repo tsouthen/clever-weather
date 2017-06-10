@@ -210,13 +210,13 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
 
     public static Cursor queryClosestCity(ContentResolver contentResolver, Location location) {
         ArrayList<String> projection = new ArrayList<String>();
-        //projection.add(CleverWeatherProvider.CITY_ID_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_ID_COLUMN);
         projection.add(CleverWeatherProvider.CITY_CODE_COLUMN);
         projection.add(CleverWeatherProvider.CITY_NAMEEN_COLUMN);
-        //projection.add(CleverWeatherProvider.CITY_NAMEFR_COLUMN);
-        //projection.add(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
-        //projection.add(CleverWeatherProvider.CITY_LATITUDE_COLUMN);
-        //projection.add(CleverWeatherProvider.CITY_LONGITUDE_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_NAMEFR_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_LATITUDE_COLUMN);
+        projection.add(CleverWeatherProvider.CITY_LONGITUDE_COLUMN);
         String colName = "dist";
         projection.add(getDistanceSquaredProjection(location, colName));
         String orderBy = colName + " limit 1";
@@ -230,13 +230,13 @@ public class CleverWeatherProviderExtended extends CleverWeatherProvider {
         Cursor cursor = queryClosestCity(contentResolver, location);
         if (cursor != null) {
             if (cursor.moveToNext()) {
-                city.Id = cursor.getInt(cursor.getColumnIndex(CleverWeatherProvider.CITY_ID_COLUMN));
-                city.Code = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_CODE_COLUMN));
-                city.NameEn = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEEN_COLUMN));
-                city.NameFr = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.CITY_NAMEFR_COLUMN));
-                city.IsFavorite = cursor.getInt(cursor.getColumnIndex(CleverWeatherProvider.CITY_ISFAVORITE_COLUMN)) != 0;
-                city.Latitude = cursor.getFloat(cursor.getColumnIndex(CleverWeatherProvider.CITY_LATITUDE_COLUMN));
-                city.Longitude = cursor.getFloat(cursor.getColumnIndex(CleverWeatherProvider.CITY_LONGITUDE_COLUMN));
+                city.Id = cursor.getInt(0);
+                city.Code = cursor.getString(1);
+                city.NameEn = cursor.getString(2);
+                city.NameFr = cursor.getString(3);
+                city.IsFavorite = cursor.getInt(4) != 0;
+                city.Latitude = cursor.getFloat(5);
+                city.Longitude = cursor.getFloat(6);
             }
             cursor.close();
         }
