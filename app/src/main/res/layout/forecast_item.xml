@@ -8,8 +8,10 @@
     <ImageView
         android:id="@+id/icon"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="50dp"
         android:layout_marginRight="3dip"
+        android:layout_marginTop="3dip"
+        android:layout_marginBottom="3dip"
         android:contentDescription="weather icon"
         android:src="@drawable/sun_cloud" />
 
@@ -22,7 +24,8 @@
         android:layout_alignTop="@id/icon"
         android:layout_alignParentEnd="true"
         android:text="22°"
-        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="?android:attr/textColorPrimary"
         android:maxLines="1" />
 
     <!--
@@ -39,7 +42,7 @@
         android:layout_alignParentRight="true"
         android:layout_below="@id/hightemp"
         android:text="12°"
-        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textAppearance="?android:attr/textAppearanceMedium"
         android:textColor="@android:color/darker_gray"
         android:maxLines="1"
         android:visibility="visible" />
@@ -67,7 +70,8 @@
         android:layout_toRightOf="@id/icon"
         android:layout_toLeftOf="@id/hightemp"
         android:text="Friday"
-        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="?android:attr/textColorPrimary"
         android:maxLines="1"
         android:ellipsize="end" />
 

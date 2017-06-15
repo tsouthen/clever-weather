@@ -450,6 +450,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             }
         }
 
+        /*
         @Override
         public void setViewText(TextView v, String text) {
             switch (v.getId()) {
@@ -464,7 +465,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
 
             }
             super.setViewText(v, text);
-        }
+        } */
 
         @Override
         public void setViewImage(ImageView v, String value) {
@@ -625,6 +626,8 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                         return bindTimeStamp((TextView) view, cursor, i);
                     case android.R.id.text2:
                         return bindText2((TextView) view, cursor, i);
+                    case android.R.id.text1:
+                        return bindText1((TextView) view, cursor, i);
                 }
                 return false;
             }
@@ -648,10 +651,14 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                 return true;
             }
 
-            private String getLowTempHtml(String lowTemp) {
+            private String getLowTempHtml(String lowTemp, String suffix) {
                 int color = mContext.getResources().getColor(R.color.low_temp_color);
-                String html = String.format("<font color=\"#%06X\">%s°</font>", color & 0x0FFFFFF, lowTemp);
+                String html = String.format("<font color=\"#%06X\">%s%s</font>", color & 0x0FFFFFF, lowTemp, suffix != null ? suffix : "");
                 return html;
+            }
+
+            private String getLowTempHtml(String lowTemp) {
+                return getLowTempHtml(lowTemp, "°");
             }
 
             private String getHighTempHtml(String highTemp) {
@@ -684,6 +691,19 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                     view.setMovementMethod(LinkMovementMethod.getInstance());
                     setExpanded(cursor.getPosition(), true);
                     setVisibilities((View) view.getParent(), true);
+                } else {
+                    view.setText(text);
+                }
+                return true;
+            }
+
+            private boolean bindText1(TextView view, Cursor cursor, int i) {
+                String text = cursor.getString(i);
+                if (text == null)
+                    text = "Now";
+                String lowText = cursor.getString(cursor.getColumnIndex(CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN));
+                if (lowText != null) {
+                    view.setText(Html.fromHtml(getLowTempHtml(text, "")));
                 } else {
                     view.setText(text);
                 }
