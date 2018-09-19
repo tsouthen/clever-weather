@@ -52,6 +52,9 @@
     <string name="search_error">Search returned no results.</string>
     <string name="forecast_error">Unable to get forecast, please try refreshing.</string>
     <string name="unavailable">Unavailable</string>
+    <!--
     <string name="hello_blank_fragment">Hello blank fragment</string>
-
+    <string name="navigation_drawer_open">Open drawer</string>
+    <string name="navigation_drawer_close">Close drawer</string>
+    -->
 </resources>

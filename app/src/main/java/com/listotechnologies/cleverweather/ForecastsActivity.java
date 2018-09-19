@@ -17,7 +17,7 @@ public class ForecastsActivity extends BaseToolbarActivity {
 
         String cityName = getIntent().getStringExtra(EXTRA_CITY_NAME);
         if (cityName != null)
-            setTitle(cityName);
+            setActionBarTitle(cityName);
 
         if (savedInstanceState == null) {
             String cityCode = getIntent().getStringExtra(EXTRA_CITY_CODE);

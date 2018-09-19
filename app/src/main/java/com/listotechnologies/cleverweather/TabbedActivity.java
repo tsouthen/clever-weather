@@ -5,23 +5,33 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v13.app.ActivityCompat;
 import android.support.v13.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.CompoundButton;
 import android.widget.SearchView;
+import android.widget.Switch;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -37,6 +47,8 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
     ViewPager mViewPager;
     private GoogleApiClient mGoogleApiClient = null;
     private City mClosestCity = null;
+    private DrawerLayout mDrawerLayout;
+    private NavigationView mNavigationView;
 
     @Override
     protected int getContentId() {
@@ -46,6 +58,54 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mNavigationView = (NavigationView) findViewById(R.id.nav_view);
+
+        ActionBar actionbar = getSupportActionBar();
+        actionbar.setDisplayHomeAsUpEnabled(true);
+        actionbar.setHomeAsUpIndicator(R.drawable.ic_menu);
+
+        if (mDrawerLayout != null && mNavigationView != null) {
+            View headerLayout = mNavigationView.getHeaderView(0);
+            if (headerLayout != null) {
+                Switch s = (Switch) headerLayout.findViewById(R.id.switch_nights);
+                if (s != null) {
+                    s.setChecked(PreferenceManager.getDefaultSharedPreferences(TabbedActivity.this).getBoolean("ShowNights", true));
+                    s.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                            PreferenceManager.getDefaultSharedPreferences(TabbedActivity.this).edit().putBoolean("ShowNights", isChecked).apply();
+                        }
+                    });
+                }
+            }
+
+            mNavigationView.setNavigationItemSelectedListener(
+                new NavigationView.OnNavigationItemSelectedListener() {
+                    @Override
+                    public boolean onNavigationItemSelected(MenuItem menuItem) {
+                        menuItem.setChecked(true);
+                        mDrawerLayout.closeDrawers();
+
+                        switch (menuItem.getItemId()) {
+                            case R.id.nav_nearby:
+                                mViewPager.setCurrentItem(0);
+                                break;
+                            case R.id.nav_location:
+                                mViewPager.setCurrentItem(1);
+                                break;
+                            case R.id.nav_favorites:
+                                mViewPager.setCurrentItem(2);
+                                break;
+                            case R.id.nav_browse:
+                                mViewPager.setCurrentItem(3);
+                                break;
+                        }
+
+                        return true;
+                    }
+                });
+            }
 
         // Create the adapter that will return a fragment for each of the primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getFragmentManager());
@@ -61,6 +121,7 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
 
             @Override
             public void onPageSelected(int position) {
+                mNavigationView.getMenu().getItem(position).setChecked(true);
                 int titleId = -1;
                 switch (position) {
                     case 0:
@@ -69,7 +130,7 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
                     case 1:
                         titleId = R.string.title_location;
                         if (mClosestCity != null) {
-                            getSupportActionBar().setTitle(mClosestCity.NameEn);
+                            setActionBarTitle(mClosestCity.NameEn);
                             return;
                         }
                         break;
@@ -81,7 +142,7 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
                         break;
                 }
                 if (titleId >= 0) {
-                    getSupportActionBar().setTitle(getString(titleId));
+                    setActionBarTitle(getString(titleId));
                 }
             }
 
@@ -102,6 +163,8 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         tabs.getTabAt(2).setIcon(R.drawable.ic_star_filled);
         tabs.getTabAt(3).setIcon(R.drawable.ic_canada);
 
+        tabs.setVisibility(View.GONE);
+
         if (mGoogleApiClient == null) {
             mGoogleApiClient = new GoogleApiClient.Builder(this)
                     .addConnectionCallbacks(this)
@@ -117,7 +180,7 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
                 //mSectionsPagerAdapter.setLocation(location);
                 //mClosestCity = CleverWeatherProviderExtended.getClosestCity(this.getContentResolver(), location);
                 //if (mClosestCity != null)
-                //    getSupportActionBar().setTitle(mClosestCity.NameEn);
+                //    setActionBarTitle(mClosestCity.NameEn);
             }
         }
     }
@@ -263,7 +326,29 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
             mClosestCity = newCity;
         }
         if (mClosestCity != null && mViewPager.getCurrentItem() == 1)
-            getSupportActionBar().setTitle(mClosestCity.NameEn);
+            setActionBarTitle(mClosestCity.NameEn);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                if (mDrawerLayout.isDrawerOpen(GravityCompat.START))
+                    mDrawerLayout.closeDrawer(GravityCompat.START);
+                else
+                    mDrawerLayout.openDrawer(GravityCompat.START);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (mDrawerLayout.isDrawerOpen(GravityCompat.START)) {
+            mDrawerLayout.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
     }
 
     private class SectionsPagerAdapter extends FragmentPagerAdapter {

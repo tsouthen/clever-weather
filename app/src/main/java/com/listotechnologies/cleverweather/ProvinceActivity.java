@@ -16,7 +16,7 @@ public class ProvinceActivity extends BaseToolbarActivity {
         super.onCreate(savedInstanceState);
         String provName = getIntent().getStringExtra(EXTRA_PROVINCE_NAME);
         if (provName != null)
-            setTitle(provName);
+            setActionBarTitle(provName);
 
         if (savedInstanceState == null) {
             String provAbbr = getIntent().getStringExtra(EXTRA_PROVINCE_ABBR);

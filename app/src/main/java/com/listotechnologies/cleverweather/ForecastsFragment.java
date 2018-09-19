@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.view.ViewCompat;
@@ -206,7 +207,12 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         Bundle args = getArguments();
         if (args != null)
             cityCode = args.getString(ARG_CITY_CODE);
-        String where = CleverWeatherProvider.FORECAST_CITYCODE_COLUMN + "=?"; // + " AND " + CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN + " IS NULL";
+        String where = CleverWeatherProvider.FORECAST_CITYCODE_COLUMN + "=?";
+
+        boolean showNights = PreferenceManager.getDefaultSharedPreferences(ForecastsFragment.this.getActivity()).getBoolean("ShowNights", true);
+        if (!showNights) {
+            where += " AND " + CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN + " IS NULL";
+        }
 
         //TODO: only show this when we're actually refreshing from internet?
         mSwipeRefresh.setRefreshing(true);
@@ -357,6 +363,10 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         getLoaderManager().restartLoader(0, null, this);
     }
 
+    public void restartLoader() {
+        getLoaderManager().restartLoader(0, null, this);
+    }
+
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
         //toggle visibility of text2 and expand
@@ -391,6 +401,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
         private SimpleDateFormat mTimeStampFmt;
         private boolean mExpanded[];
         private String mTitleString;
+        private boolean mIsLowTemp;
 
         ForecastAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flags) {
             super(context, layout, c, from, to, flags);
@@ -399,17 +410,18 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             mExpanded = null;
             if (c != null) {
                 mExpanded = new boolean[c.getCount()];
-                if (mExpanded.length > 0)
-                    mExpanded[0] = true;
+                //if (mExpanded.length > 0)
+                //    mExpanded[0] = true;
             }
+            mIsLowTemp = false;
         }
 
         @Override
         public Cursor swapCursor(Cursor c) {
             if (c != null) {
                 mExpanded = new boolean[c.getCount()];
-                if (mExpanded.length > 0)
-                    mExpanded[0] = true;
+                //if (mExpanded.length > 0)
+                //    mExpanded[0] = true;
             } else {
                 mExpanded = null;
             }
@@ -424,15 +436,19 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             View view;
             //not sure why this is sometimes happening in the wild
             try {
+                mIsLowTemp = false;
                 view = super.getView(position, convertView, parent);
             } catch (IllegalStateException isEx) {
                 return new View(mContext);
             }
+
+            view.setVisibility(View.VISIBLE);
             boolean expanded = false;
             if (mExpanded != null && position >= 0 && position < mExpanded.length)
                 expanded = mExpanded[position];
 
             setVisibilities(view, expanded);
+
             return view;
         }
 
@@ -676,6 +692,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
                     textVal = Html.fromHtml(getHighTempHtml(highText));
                 } else if (lowText != null) {
                     textVal = Html.fromHtml(getLowTempHtml(lowText));
+                    mIsLowTemp = true;
                 } else {
                     textVal = new SpannedString("");
                 }

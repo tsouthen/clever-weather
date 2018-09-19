@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_nearby"
+            android:icon="@drawable/ic_map_markers"
+            android:title="@string/title_nearby" />
+        <item
+            android:id="@+id/nav_location"
+            android:icon="@drawable/ic_map_marker"
+            android:title="@string/title_location"
+            android:checked="true" />
+        <item
+            android:id="@+id/nav_favorites"
+            android:icon="@drawable/ic_ai_important"
+            android:title="@string/title_favorites" />
+        <item
+            android:id="@+id/nav_browse"
+            android:icon="@drawable/ic_canada"
+            android:title="@string/title_browse" />
+    </group>
+</menu>

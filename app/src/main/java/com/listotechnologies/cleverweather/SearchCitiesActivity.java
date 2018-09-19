@@ -33,7 +33,7 @@ public class SearchCitiesActivity extends BaseToolbarActivity {
 
     private void viewCities(String query) {
         getFragmentManager().beginTransaction().add(R.id.content, CitiesFragment.newSearchInstance(query)).commit();
-        setTitle(query);
+        setActionBarTitle(query);
     }
 
     private void viewForecasts(String query) {
@@ -45,7 +45,7 @@ public class SearchCitiesActivity extends BaseToolbarActivity {
                         .add(R.id.content, ForecastsFragment.newInstance(content.getAsString(CleverWeatherProviderExtended.CITY_CODE_COLUMN),
                                                                                  content.getAsBoolean(CleverWeatherProviderExtended.CITY_ISFAVORITE_COLUMN)))
                         .commit();
-                setTitle(content.getAsString(CleverWeatherProviderExtended.CITY_NAMEEN_COLUMN));
+                setActionBarTitle(content.getAsString(CleverWeatherProviderExtended.CITY_NAMEEN_COLUMN));
             }
         }
     }
