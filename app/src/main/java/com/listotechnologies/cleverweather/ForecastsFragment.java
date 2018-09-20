@@ -209,7 +209,7 @@ public class ForecastsFragment extends ListFragment implements LoaderManager.Loa
             cityCode = args.getString(ARG_CITY_CODE);
         String where = CleverWeatherProvider.FORECAST_CITYCODE_COLUMN + "=?";
 
-        boolean showNights = PreferenceManager.getDefaultSharedPreferences(ForecastsFragment.this.getActivity()).getBoolean("ShowNights", true);
+        boolean showNights = PreferenceManager.getDefaultSharedPreferences(ForecastsFragment.this.getActivity()).getBoolean(TabbedActivity.SHOW_NIGHTS_KEY, true);
         if (!showNights) {
             where += " AND " + CleverWeatherProvider.FORECAST_LOWTEMP_COLUMN + " IS NULL";
         }

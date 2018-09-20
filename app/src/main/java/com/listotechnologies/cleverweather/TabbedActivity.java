@@ -5,7 +5,6 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.SearchManager;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
@@ -24,7 +23,6 @@ import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -50,9 +48,16 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
     private DrawerLayout mDrawerLayout;
     private NavigationView mNavigationView;
 
+    public static final String SHOW_NIGHTS_KEY = "ShowNights";
+    public static final String SHOW_TABS_KEY = "ShowTabs";
+
     @Override
     protected int getContentId() {
         return R.layout.activity_tabbed;
+    }
+
+    private boolean getBooleanPreference(String key, boolean defaultValue) {
+        return PreferenceManager.getDefaultSharedPreferences(this).getBoolean(key, defaultValue);
     }
 
     @Override
@@ -69,12 +74,28 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         if (mDrawerLayout != null && mNavigationView != null) {
             View headerLayout = mNavigationView.getHeaderView(0);
             if (headerLayout != null) {
-                Switch s = (Switch) headerLayout.findViewById(R.id.switch_nights);
-                if (s != null) {
-                    s.setChecked(PreferenceManager.getDefaultSharedPreferences(TabbedActivity.this).getBoolean("ShowNights", true));
-                    s.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                Switch showNights = (Switch) headerLayout.findViewById(R.id.switch_nights);
+                if (showNights != null) {
+                    showNights.setChecked(getBooleanPreference(SHOW_NIGHTS_KEY, false));
+                    showNights.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                            PreferenceManager.getDefaultSharedPreferences(TabbedActivity.this).edit().putBoolean("ShowNights", isChecked).apply();
+                            PreferenceManager.getDefaultSharedPreferences(TabbedActivity.this).edit().putBoolean(SHOW_NIGHTS_KEY, isChecked).apply();
+//                            TabbedActivity.this.recreate();
+//                            ForecastsFragment locationFrag = (ForecastsFragment) mSectionsPagerAdapter.getFragment(1);
+//                            if (locationFrag != null) {
+//                                locationFrag.restartLoader();
+//                            }
+                        }
+                    });
+                }
+
+                Switch showTabs = (Switch) headerLayout.findViewById(R.id.switch_tabs);
+                if (showTabs != null) {
+                    showTabs.setChecked(getBooleanPreference(SHOW_TABS_KEY, true));
+                    showTabs.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                            PreferenceManager.getDefaultSharedPreferences(TabbedActivity.this).edit().putBoolean(SHOW_TABS_KEY, isChecked).apply();
+                            TabbedActivity.this.recreate();
                         }
                     });
                 }
@@ -163,7 +184,8 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         tabs.getTabAt(2).setIcon(R.drawable.ic_star_filled);
         tabs.getTabAt(3).setIcon(R.drawable.ic_canada);
 
-        tabs.setVisibility(View.GONE);
+        boolean showTabs = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(SHOW_TABS_KEY, true);
+        tabs.setVisibility(showTabs ? View.VISIBLE: View.GONE);
 
         if (mGoogleApiClient == null) {
             mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -262,12 +284,12 @@ public class TabbedActivity extends BaseToolbarActivity implements ProvincesFrag
         return true;
     }
 
-    private void showInputMethod(View view) {
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) {
-            imm.showSoftInput(view, 0);
-        }
-    }
+//    private void showInputMethod(View view) {
+//        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+//        if (imm != null) {
+//            imm.showSoftInput(view, 0);
+//        }
+//    }
 
     @Override
     public void onProvinceClick(ProvincesFragment.Province province) {

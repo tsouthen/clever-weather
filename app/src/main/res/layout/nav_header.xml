@@ -44,8 +44,18 @@
         android:layout_height="wrap_content"
         android:checked="true"
         android:text="Show Night Forecasts"
-        android:paddingBottom="16dp"
+        android:paddingBottom="8dp"
         android:paddingTop="16dp"
+        />
+
+    <Switch
+        android:id="@+id/switch_tabs"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:checked="false"
+        android:text="Show Tabs"
+        android:paddingBottom="16dp"
+        android:paddingTop="8dp"
         />
 
 </LinearLayout>
